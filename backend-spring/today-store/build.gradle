@@ -37,7 +37,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-storage'
-	implementation 'com.google.cloud.sql:postgres-socket-factory'
 	implementation 'com.bucket4j:bucket4j-core:8.10.1'
 
 	implementation platform("org.springframework.ai:spring-ai-bom:1.0.0")
