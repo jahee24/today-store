@@ -24,6 +24,10 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 30MB
+  
+  ai:
+    model:
+      chat: none
 
 server:
   port: ${PORT:8080}
