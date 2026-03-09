@@ -1,6 +1,7 @@
 package today_store.authentication.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,9 +15,8 @@ import java.util.UUID;
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"provider", "provider_id"})
 })
-@Setter
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
     @Id
@@ -59,6 +59,18 @@ public class User {
         this.provider = provider;
         this.providerId = providerId;
         this.profileImageUrl = profileImageUrl;
+    }
+
+    public void recordLogin() {
+        this.lastLoginAt = LocalDateTime.now();
+    }
+
+    public void deactivate() {
+        this.isActive = false;
+    }
+
+    public void activate() {
+        this.isActive = true;
     }
 
 }
