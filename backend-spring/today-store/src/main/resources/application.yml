@@ -29,6 +29,49 @@ spring:
     model:
       chat: none
 
+  # ============ OAuth2 설정 ==========
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - profile
+              - email
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+            authorization-grant-type: authorization_code
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-name: Kakao
+            scope:
+              - profile_nickname
+              - account_email
+              - profile_image
+            redirect-uri: ${KAKAO_REDIRECT_URI}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  # ======= flyway(db 형상관리) 설정 =========
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  access-token-expiration-seconds: 1800 # 30 minutes
+  refresh-token-expiration-seconds: 604800 # 7 days
+
+
 server:
   port: ${PORT:8080}
 
