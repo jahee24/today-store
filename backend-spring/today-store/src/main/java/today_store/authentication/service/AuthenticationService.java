@@ -48,6 +48,7 @@ public class AuthenticationService {
     private final ClientRegistrationRepository clientRegistrationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
+    private final WebClient webClient;
 
     public LoginResponse oauthLogin(LoginRequest loginRequest) {
         log.info("OAuth login attempt for provider: {}", loginRequest.getProvider());
@@ -190,9 +191,8 @@ public class AuthenticationService {
             log.info("Access token blacklisted for deleted user ID: {}", userId);
         }
 
-        // 3. Soft delete: Deactivate the user instead of physical deletion
+        // 3. Soft delete
         user.deactivate();
-        userRepository.save(user);
         log.info("User account successfully deactivated (soft delete). User ID: {}", userId);
     }
 
@@ -206,8 +206,7 @@ public class AuthenticationService {
         formData.add("code", code);
 
         try {
-            Map<String, Object> response = WebClient.create()
-                    .post()
+            Map<String, Object> response = webClient.post()
                     .uri(clientRegistration.getProviderDetails().getTokenUri())
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .bodyValue(formData)
@@ -238,8 +237,7 @@ public class AuthenticationService {
     private Map<String, Object> getUserAttributes(ClientRegistration clientRegistration, String token) {
         log.info("Requesting user attributes from {}", clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri());
         try {
-            Map<String, Object> userAttributes = WebClient.create()
-                    .get()
+            Map<String, Object> userAttributes = webClient.get()
                     .uri(clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri())
                     .headers(header -> header.setBearerAuth(token))
                     .retrieve()
