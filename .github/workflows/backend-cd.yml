@@ -1,0 +1,213 @@
+name: Backend CD
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'backend-spring/**'
+      - '.github/workflows/backend-*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_scan_push_deploy:
+    runs-on: ubuntu-latest
+
+    outputs:
+      deploy_env: ${{ steps.context.outputs.deploy_env }}
+      image_uri: ${{ steps.image_meta.outputs.image_uri }}
+      cloud_run_service: ${{ steps.context.outputs.cloud_run_service }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Select branch-specific deployment target (develop=dev, main=prod)
+      - name: Resolve deployment context
+        id: context
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "deploy_env=prod" >> "$GITHUB_OUTPUT"
+            echo "project_id=${{ secrets.GCP_PROJECT_ID_PROD }}" >> "$GITHUB_OUTPUT"
+            echo "region=${{ secrets.GCP_REGION_PROD }}" >> "$GITHUB_OUTPUT"
+            echo "artifact_repo=${{ secrets.GCP_ARTIFACT_REPO_PROD }}" >> "$GITHUB_OUTPUT"
+            echo "cloud_run_service=${{ secrets.GCP_CLOUD_RUN_SERVICE_PROD }}" >> "$GITHUB_OUTPUT"
+            echo "wif_provider=${{ secrets.GCP_WIF_PROVIDER_PROD }}" >> "$GITHUB_OUTPUT"
+            echo "service_account=${{ secrets.GCP_SERVICE_ACCOUNT_PROD }}" >> "$GITHUB_OUTPUT"
+          elif [ "${GITHUB_REF_NAME}" = "develop" ]; then
+            echo "deploy_env=dev" >> "$GITHUB_OUTPUT"
+            echo "project_id=${{ secrets.GCP_PROJECT_ID_DEV }}" >> "$GITHUB_OUTPUT"
+            echo "region=${{ secrets.GCP_REGION_DEV }}" >> "$GITHUB_OUTPUT"
+            echo "artifact_repo=${{ secrets.GCP_ARTIFACT_REPO_DEV }}" >> "$GITHUB_OUTPUT"
+            echo "cloud_run_service=${{ secrets.GCP_CLOUD_RUN_SERVICE_DEV }}" >> "$GITHUB_OUTPUT"
+            echo "wif_provider=${{ secrets.GCP_WIF_PROVIDER_DEV }}" >> "$GITHUB_OUTPUT"
+            echo "service_account=${{ secrets.GCP_SERVICE_ACCOUNT_DEV }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unsupported branch for deployment: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
+      # Fail fast if required deployment values are missing
+      - name: Validate deployment settings
+        env:
+          PROJECT_ID: ${{ steps.context.outputs.project_id }}
+          REGION: ${{ steps.context.outputs.region }}
+          ARTIFACT_REPO: ${{ steps.context.outputs.artifact_repo }}
+          CLOUD_RUN_SERVICE: ${{ steps.context.outputs.cloud_run_service }}
+          WIF_PROVIDER: ${{ steps.context.outputs.wif_provider }}
+          SERVICE_ACCOUNT: ${{ steps.context.outputs.service_account }}
+        shell: bash
+        run: |
+          for var in PROJECT_ID REGION ARTIFACT_REPO CLOUD_RUN_SERVICE WIF_PROVIDER SERVICE_ACCOUNT; do
+            if [ -z "${!var}" ]; then
+              echo "Missing required deployment setting: $var" >&2
+              exit 1
+            fi
+          done
+
+      # Set up JDK and Gradle cache
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Run backend tests before container build
+      - name: Build and test with Gradle
+        working-directory: backend-spring/today-store
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon test bootJar
+
+      # Authenticate to GCP (WIF)
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ steps.context.outputs.wif_provider }}
+          service_account: ${{ steps.context.outputs.service_account }}
+
+      # Install gcloud CLI
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Resolve branch-specific image URI
+      - name: Resolve image URI
+        id: image_meta
+        env:
+          PROJECT_ID: ${{ steps.context.outputs.project_id }}
+          REGION: ${{ steps.context.outputs.region }}
+          ARTIFACT_REPO: ${{ steps.context.outputs.artifact_repo }}
+          DEPLOY_ENV: ${{ steps.context.outputs.deploy_env }}
+        shell: bash
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          IMAGE_TAG="${DEPLOY_ENV}-${SHORT_SHA}"
+          IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/today-store-backend:${IMAGE_TAG}"
+          echo "image_uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+
+      # Build Docker image
+      - name: Build Docker image
+        env:
+          IMAGE_URI: ${{ steps.image_meta.outputs.image_uri }}
+        shell: bash
+        run: |
+          docker build -t "$IMAGE_URI" backend-spring/today-store
+
+      # Scan Docker image for HIGH/CRITICAL vulnerabilities
+      - name: Trivy security scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ steps.image_meta.outputs.image_uri }}
+          version: v0.69.2
+          format: table
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      # Push image to Artifact Registry
+      - name: Push image to Artifact Registry
+        env:
+          REGION: ${{ steps.context.outputs.region }}
+          IMAGE_URI: ${{ steps.image_meta.outputs.image_uri }}
+        shell: bash
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker push "$IMAGE_URI"
+
+      # Deploy image to Cloud Run service
+      - name: Deploy to Cloud Run
+        env:
+          PROJECT_ID: ${{ steps.context.outputs.project_id }}
+          REGION: ${{ steps.context.outputs.region }}
+          CLOUD_RUN_SERVICE: ${{ steps.context.outputs.cloud_run_service }}
+          IMAGE_URI: ${{ steps.image_meta.outputs.image_uri }}
+        shell: bash
+        run: |
+          gcloud run deploy "$CLOUD_RUN_SERVICE" \
+            --image "$IMAGE_URI" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --platform managed \
+            --quiet
+
+  notify_slack:
+    runs-on: ubuntu-latest
+    needs:
+      - build_scan_push_deploy
+    if: always()
+
+    steps:
+      # Send deployment status to Slack Channel
+      - name: Send Slack notification
+        shell: bash
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          BUILD_RESULT: ${{ needs.build_scan_push_deploy.result }}
+          DEPLOY_ENV: ${{ needs.build_scan_push_deploy.outputs.deploy_env }}
+          IMAGE_URI: ${{ needs.build_scan_push_deploy.outputs.image_uri }}
+          CLOUD_RUN_SERVICE: ${{ needs.build_scan_push_deploy.outputs.cloud_run_service }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          # Skip when webhook is not configured.
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is not set. Skipping notification."
+            exit 0
+          fi
+
+          if [ "$BUILD_RESULT" = "success" ]; then
+            STATUS_TEXT="SUCCESS"
+            COLOR="#2eb886"
+          else
+            STATUS_TEXT="FAILED"
+            COLOR="#e01e5a"
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "attachments": [
+              {
+                "color": "${COLOR}",
+                "text": "*Backend CD ${STATUS_TEXT}*\\nEnvironment: ${DEPLOY_ENV}\\nService: ${CLOUD_RUN_SERVICE}\\nBranch: ${BRANCH_NAME}\\nCommit: ${COMMIT_SHA}\\nImage: ${IMAGE_URI}\\nRun: ${RUN_URL}"
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"

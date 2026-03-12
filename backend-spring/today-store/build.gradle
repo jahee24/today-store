@@ -27,6 +27,7 @@ repositories {
 ext {
 	set('springCloudGcpVersion', "7.4.2")
 	set('springCloudVersion', "2025.0.1")
+	set('jackson-bom.version', "2.21.1")
 }
 
 dependencies {
@@ -55,6 +56,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
 	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
