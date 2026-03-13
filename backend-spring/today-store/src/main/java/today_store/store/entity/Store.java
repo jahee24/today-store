@@ -1,11 +1,7 @@
 package today_store.store.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import today_store.authentication.entity.User;
@@ -22,9 +18,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "stores")
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class Store {
 
@@ -73,4 +68,14 @@ public class Store {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public void update(String storeName, PreferredStyle preferredStyle, String snsInstagram, String snsNaverUrl, String snsKarrotUrl, String businessType, String address) {
+        if (storeName != null) this.storeName = storeName;
+        if (preferredStyle != null) this.preferredStyle = preferredStyle;
+        if (snsInstagram != null) this.snsInstagram = snsInstagram;
+        if (snsNaverUrl != null) this.snsNaverUrl = snsNaverUrl;
+        if (snsKarrotUrl != null) this.snsKarrotUrl = snsKarrotUrl;
+        if (businessType != null) this.businessType = businessType;
+        if (address != null) this.address = address;
+    }
 }
