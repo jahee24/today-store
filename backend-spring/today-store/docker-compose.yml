@@ -41,14 +41,20 @@ services:
       redis:
         condition: service_healthy
     environment:
-      PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/testrun?sslmode=disable
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: testdb
-      REDIS_HOST: redis
-      REDIS_PASSWORD: ""
-      GCS_BUCKET: today-store-dev-user-uploads
-      GCS_PREFIX: uploads/
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ""
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
+      GCS_BUCKET: ${GCS_BUCKET}
+      GCS_PREFIX: ${GCS_PREFIX}
       GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/gcp-sa.json
     volumes:
       - ./secrets/gcp-sa.json:/app/secrets/gcp-sa.json:ro
