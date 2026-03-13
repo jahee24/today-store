@@ -17,6 +17,14 @@ public enum ErrorCode {
     USER_DISABLED(HttpStatus.FORBIDDEN, "A006", "Access denied. Your account has been deactivated."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "A007", "User not found."),
 
+    // User
+    INVALID_NAME_FORMAT(HttpStatus.BAD_REQUEST, "U001", "Invalid name format"),
+
+    // Store
+    STORE_REQUIRED_FIELDS_MISSING(HttpStatus.BAD_REQUEST, "S001", "Store name and business type are required"),
+    STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "S002", "User already has a registered store"),
+    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "S003", "Store profile not found"),
+
 
     // Rate Limit
     RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "R001", "Rate limit exceeded. Please try again later.");
