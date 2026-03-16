@@ -1,4 +1,4 @@
-package com.example.fronted
+package com.today_store.frontend
 
 import io.flutter.embedding.android.FlutterActivity
 
