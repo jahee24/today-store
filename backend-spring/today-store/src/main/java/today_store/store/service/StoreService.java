@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import today_store.authentication.entity.User;
+import today_store.authentication.repository.UserRepository;
+import today_store.common.exception.CustomException;
+import today_store.common.exception.ErrorCode;
 import today_store.store.dto.*;
 import today_store.store.entity.PreferredStyle;
 import today_store.store.entity.Store;
@@ -18,6 +21,7 @@ import java.time.LocalDateTime;
 public class StoreService {
 
     private final StoreRepository storeRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public CreateStoreResponse createStore(User user, CreateStoreRequest request) {
@@ -40,10 +44,7 @@ public class StoreService {
                 .build();
 
         Store savedStore = storeRepository.save(store);
-        return CreateStoreResponse.builder()
-                .id(savedStore.getId())
-                .createdAt(savedStore.getCreatedAt())
-                .build();
+        return CreateStoreResponse.from(savedStore);
     }
 
     @Transactional(readOnly = true)
@@ -51,24 +52,14 @@ public class StoreService {
         Store store = storeRepository.findByUser(user)
                 .orElseThrow(StoreNotFoundException::new);
 
-        return StoreResponse.builder()
-                .id(store.getId())
-                .storeName(store.getStoreName())
-                .businessType(store.getBusinessType())
-                .address(store.getAddress())
-                .latitude(store.getLatitude())
-                .longitude(store.getLongitude())
-                .preferredStyle(store.getPreferredStyle())
-                .sns(SnsInfo.builder()
-                        .instagram(store.getSnsInstagram())
-                        .naver(store.getSnsNaverUrl())
-                        .karrot(store.getSnsKarrotUrl())
-                        .build())
-                .build();
+        return StoreResponse.from(store);
     }
 
     @Transactional
-    public UpdateStoreResponse updateStore(User user, UpdateStoreRequest request) {
+    public UpdateStoreResponse updateStore(String email, UpdateStoreRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
         Store store = storeRepository.findByUser(user)
                 .orElseThrow(StoreNotFoundException::new);
 
@@ -82,9 +73,8 @@ public class StoreService {
                 request.getAddress()
         );
 
-        return UpdateStoreResponse.builder()
-                .id(store.getId())
-                .updatedAt(store.getUpdatedAt())
-                .build();
+        storeRepository.saveAndFlush(store);
+
+        return UpdateStoreResponse.from(store);
     }
 }
