@@ -21,27 +21,20 @@ import today_store.user.service.UserService;
 public class UserController {
 
     private final UserService userService;
-    private final UserRepository userRepository;
 
     @GetMapping("/me")
     @RateLimit(tier = RateLimitTier.LOW)
     public UserProfileResponse getMyProfile(Authentication authentication) {
-        User user = getUser(authentication);
+        User user = userService.getUser(authentication);
         return userService.getUserProfile(user);
     }
 
     @PatchMapping("/me")
     @RateLimit(tier = RateLimitTier.MIDDLE)
     public UpdateUserProfileResponse updateMyProfile(@Valid @RequestBody UpdateUserProfileRequest request, Authentication authentication) {
-        User user = getUser(authentication);
-        return userService.updateUserProfile(user, request);
-    }
-
-    private User getUser(Authentication authentication) {
         if (authentication == null) {
             throw new CustomException(ErrorCode.AUTHENTICATION_REQUIRED);
         }
-        return userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return userService.updateUserProfile(authentication.getName(), request);
     }
 }
