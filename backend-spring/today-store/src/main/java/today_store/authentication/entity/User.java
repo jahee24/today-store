@@ -73,4 +73,10 @@ public class User {
         this.isActive = true;
     }
 
+    public void updateName(String name) {
+        if (name != null && !name.isBlank()) {
+            this.name = name;
+        }
+    }
+
 }

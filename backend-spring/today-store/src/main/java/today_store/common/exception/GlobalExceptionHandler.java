@@ -1,5 +1,6 @@
 package today_store.common.exception;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -13,15 +14,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private final ValidationErrorResolver validationErrorResolver;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         log.error("MethodArgumentNotValidException: {}", e.getMessage());
-        
-        ErrorCode errorCode = ErrorCode.MISSING_REQUIRED_FIELDS;
+
         BindingResult bindingResult = e.getBindingResult();
+
+        String objectName = e.getBindingResult().getObjectName();
+        ErrorCode errorCode = validationErrorResolver.resolve(objectName);
         
         List<ErrorResponse.FieldError> errors = bindingResult.getFieldErrors().stream()
                 .map(error -> ErrorResponse.FieldError.builder()
