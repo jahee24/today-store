@@ -69,7 +69,7 @@ public class Store {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public void update(String storeName, PreferredStyle preferredStyle, String snsInstagram, String snsNaverUrl, String snsKarrotUrl, String businessType, String address) {
+    public void update(String storeName, PreferredStyle preferredStyle, String snsInstagram, String snsNaverUrl, String snsKarrotUrl, String businessType, String address, BigDecimal latitude, BigDecimal longitude) {
         if (storeName != null) this.storeName = storeName;
         if (preferredStyle != null) this.preferredStyle = preferredStyle;
         if (snsInstagram != null) this.snsInstagram = snsInstagram;
@@ -77,5 +77,7 @@ public class Store {
         if (snsKarrotUrl != null) this.snsKarrotUrl = snsKarrotUrl;
         if (businessType != null) this.businessType = businessType;
         if (address != null) this.address = address;
+        if (latitude != null) this.latitude = latitude;
+        if (longitude != null) this.longitude = longitude;
     }
 }

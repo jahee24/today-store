@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import today_store.store.entity.PreferredStyle;
 
+import java.math.BigDecimal;
+
 @Getter
 @Builder
 @NoArgsConstructor
@@ -18,4 +20,6 @@ public class UpdateStoreRequest {
     private String snsKarrotUrl;
     private String businessType;
     private String address;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
 }

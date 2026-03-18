@@ -70,7 +70,9 @@ public class StoreService {
                 request.getSnsNaverUrl(),
                 request.getSnsKarrotUrl(),
                 request.getBusinessType(),
-                request.getAddress()
+                request.getAddress(),
+                request.getLatitude(),
+                request.getLongitude()
         );
 
         storeRepository.saveAndFlush(store);
