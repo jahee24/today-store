@@ -1,11 +1,7 @@
 package today_store.content.request.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -14,9 +10,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "input_images")
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class InputImage {
 
@@ -42,4 +37,9 @@ public class InputImage {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public void update(String description, Integer displayOrder) {
+        if (description != null) this.description = description;
+        if (displayOrder != null) this.displayOrder = displayOrder;
+    }
 }

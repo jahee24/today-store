@@ -1,11 +1,7 @@
 package today_store.content.request.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import today_store.authentication.entity.User;
 
@@ -15,9 +11,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "generation_requests")
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class GenerationRequest {
 
@@ -46,4 +41,14 @@ public class GenerationRequest {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public void update(String concept, String additionalNote) {
+        if (concept != null) this.concept = concept;
+        if (additionalNote != null) this.additionalNote = additionalNote;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
 }
