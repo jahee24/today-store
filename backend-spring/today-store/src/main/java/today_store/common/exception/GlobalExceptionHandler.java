@@ -7,6 +7,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import today_store.common.dto.ErrorResponse;
 
 import java.time.LocalDateTime;
@@ -42,6 +43,19 @@ public class GlobalExceptionHandler {
                 .code(errorCode.getCode())
                 .message(errorCode.getMessage())
                 .errors(errors)
+                .timestamp(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(response, errorCode.getStatus());
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    protected ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        log.error("MaxUploadSizeExceededException: {}", e.getMessage());
+        ErrorCode errorCode = ErrorCode.FILE_SIZE_LIMIT_EXCEEDED;
+        ErrorResponse response = ErrorResponse.builder()
+                .status(errorCode.getStatus().value())
+                .code(errorCode.getCode())
+                .message(errorCode.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
         return new ResponseEntity<>(response, errorCode.getStatus());

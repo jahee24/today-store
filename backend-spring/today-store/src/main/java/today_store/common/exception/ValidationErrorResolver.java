@@ -13,6 +13,7 @@ public class ValidationErrorResolver {
         // DTO ObjectName <-> ErrorCode 매핑
         errorMapping.put("createStoreRequest", ErrorCode.STORE_REQUIRED_FIELDS_MISSING);
         errorMapping.put("updateUserProfileRequest", ErrorCode.INVALID_NAME_FORMAT);
+        errorMapping.put("createGenerationRequest", ErrorCode.GENERATION_REQUEST_REQUIRED_FIELDS_MISSING);
     }
 
     public ErrorCode resolve(String objectName) {

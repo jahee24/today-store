@@ -16,6 +16,7 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "A006", "Access denied."),
     USER_DISABLED(HttpStatus.FORBIDDEN, "A006", "Access denied. Your account has been deactivated."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "A007", "User not found."),
+    ACCESS_DENIED_TO_RESOURCE(HttpStatus.FORBIDDEN, "A008", "Access denied. Resource ownership mismatch."),
 
     // User
     INVALID_NAME_FORMAT(HttpStatus.BAD_REQUEST, "U001", "Invalid name format"),
@@ -25,6 +26,12 @@ public enum ErrorCode {
     STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "S002", "User already has a registered store"),
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "S003", "Store profile not found"),
 
+    // Content/Generation Request
+    GENERATION_REQUEST_REQUIRED_FIELDS_MISSING(HttpStatus.BAD_REQUEST, "C001", "Missing required fields"),
+    FILE_NAME_MISMATCH(HttpStatus.BAD_REQUEST, "C002", "File name mismatch in imageConfigs"),
+    INVALID_REQUEST_BODY_FORMAT(HttpStatus.BAD_REQUEST, "C003", "Invalid request body format"),
+    FILE_SIZE_LIMIT_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "C004", "File size limit exceeded"),
+    GENERATION_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "C005", "Request not found or already deleted"),
 
     // Rate Limit
     RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "R001", "Rate limit exceeded. Please try again later.");
