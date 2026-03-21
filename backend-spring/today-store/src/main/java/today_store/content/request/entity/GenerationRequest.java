@@ -31,6 +31,12 @@ public class GenerationRequest {
     @Column(name = "additional_note", columnDefinition = "TEXT")
     private String additionalNote;
 
+    @Column(name = "target_age", length = 50)
+    private String targetAge;
+
+    @Column(name = "target_gender", length = 20)
+    private String targetGender;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -42,9 +48,11 @@ public class GenerationRequest {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public void update(String concept, String additionalNote) {
+    public void update(String concept, String additionalNote, String targetAge, String targetGender) {
         if (concept != null) this.concept = concept;
         if (additionalNote != null) this.additionalNote = additionalNote;
+        if (targetAge != null) this.targetAge = targetAge;
+        if (targetGender != null) this.targetGender = targetGender;
     }
 
     public void delete() {

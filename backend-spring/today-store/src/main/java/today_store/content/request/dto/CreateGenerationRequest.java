@@ -18,6 +18,10 @@ public class CreateGenerationRequest {
 
     private String additionalNote;
 
+    private String targetAge;
+
+    private String targetGender;
+
     @NotEmpty(message = "Image descriptions are required")
     private List<String> imageDescriptions;
 

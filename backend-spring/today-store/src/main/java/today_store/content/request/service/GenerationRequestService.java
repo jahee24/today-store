@@ -55,6 +55,8 @@ public class GenerationRequestService {
                 .user(user)
                 .concept(request.getConcept())
                 .additionalNote(request.getAdditionalNote())
+                .targetAge(request.getTargetAge())
+                .targetGender(request.getTargetGender())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -185,7 +187,7 @@ public class GenerationRequestService {
             throw new AccessDeniedToResourceException();
         }
 
-        generationRequest.update(request.getConcept(), request.getAdditionalNote());
+        generationRequest.update(request.getConcept(), request.getAdditionalNote(), request.getTargetAge(), request.getTargetGender());
 
         // 2. 상태 동기화 (삭제 로직 자동화)
         List<InputImage> currentImages = imageRepository.findByGenerationRequestOrderByDisplayOrderAsc(generationRequest);
@@ -251,6 +253,9 @@ public class GenerationRequestService {
 
         log.info("Update completed for request {}. Added: {}, Deleted: {}, Final Count: {}",
                 requestId, addedCount, deletedCount, finalImages.size());
+
+        requestRepository.saveAndFlush(generationRequest);
+
         return UpdateGenerationResponse.from(generationRequest, imageSummary);
     }
 }

@@ -20,6 +20,8 @@ public class GenerationRequestDetailResponse {
     private UUID userId;
     private String concept;
     private String additionalNote;
+    private String targetAge;
+    private String targetGender;
     private LocalDateTime createdAt;
     private List<ImageResponse> images;
 
@@ -29,6 +31,8 @@ public class GenerationRequestDetailResponse {
                 .userId(request.getUser().getId())
                 .concept(request.getConcept())
                 .additionalNote(request.getAdditionalNote())
+                .targetAge(request.getTargetAge())
+                .targetGender(request.getTargetGender())
                 .createdAt(request.getCreatedAt())
                 .images(images)
                 .build();

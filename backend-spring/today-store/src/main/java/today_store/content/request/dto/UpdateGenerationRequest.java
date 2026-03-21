@@ -13,6 +13,8 @@ import java.util.List;
 public class UpdateGenerationRequest {
     private String concept;
     private String additionalNote;
+    private String targetAge;
+    private String targetGender;
     private String imageConfigs;   // JSON array of ImageConfig
     private List<MultipartFile> newImages;
 }

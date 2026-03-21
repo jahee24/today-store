@@ -17,6 +17,8 @@ public class UpdateGenerationResponse {
     private UUID requestId;
     private String concept;
     private String additionalNote;
+    private String targetAge;
+    private String targetGender;
     private LocalDateTime updatedAt;
     private ImageSummary imageSummary;
 
@@ -25,6 +27,8 @@ public class UpdateGenerationResponse {
                 .requestId(request.getId())
                 .concept(request.getConcept())
                 .additionalNote(request.getAdditionalNote())
+                .targetAge(request.getTargetAge())
+                .targetGender(request.getTargetGender())
                 .updatedAt(LocalDateTime.now())
                 .imageSummary(imageSummary)
                 .build();
