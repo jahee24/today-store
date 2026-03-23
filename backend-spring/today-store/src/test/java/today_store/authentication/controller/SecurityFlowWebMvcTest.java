@@ -35,13 +35,15 @@ import today_store.authentication.jwt.JwtTokenProvider;
 import today_store.authentication.repository.BlacklistedTokenRepository;
 import today_store.authentication.service.AuthenticationService;
 import today_store.common.config.SecurityConfig;
+import today_store.common.exception.ValidationErrorResolver;
 import today_store.common.ratelimit.RateLimitService;
 
 @WebMvcTest(controllers = AuthController.class)
 @Import({
         SecurityConfig.class,
         JwtAuthenticationEntryPoint.class,
-        JwtAccessDeniedHandler.class
+        JwtAccessDeniedHandler.class,
+        ValidationErrorResolver.class
 })
 @DisplayName("인증 보안 흐름 테스트")
 class SecurityFlowWebMvcTest {

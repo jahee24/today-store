@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,11 +33,13 @@ import today_store.authentication.dto.RefreshTokenRequest;
 import today_store.authentication.dto.RefreshTokenResponse;
 import today_store.authentication.exception.InvalidRefreshTokenException;
 import today_store.authentication.service.AuthenticationService;
+import today_store.common.exception.ValidationErrorResolver;
 import today_store.common.ratelimit.RateLimitService;
 import today_store.common.ratelimit.RateLimitTier;
 
 @WebMvcTest(controllers = AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(ValidationErrorResolver.class)
 @DisplayName("인증 컨트롤러 테스트")
 class AuthControllerWebMvcTest {
 

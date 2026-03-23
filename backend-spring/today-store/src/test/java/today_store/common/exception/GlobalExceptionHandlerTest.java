@@ -18,7 +18,7 @@ import today_store.common.dto.ErrorResponse;
 @DisplayName("전역 예외 처리기 테스트")
 class GlobalExceptionHandlerTest {
 
-    private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
+    private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler(new ValidationErrorResolver());
 
     @Test
     @DisplayName("커스텀 예외를 공통 에러 응답으로 변환")
