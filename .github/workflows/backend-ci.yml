@@ -52,10 +52,10 @@ jobs:
 
       # Scan Docker image for HIGH/CRITICAL vulnerabilities
       - name: Trivy security scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
         with:
           image-ref: backend-ci-test:latest
-          version: v0.69.2
+          version: v0.69.3
           format: table
           vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
