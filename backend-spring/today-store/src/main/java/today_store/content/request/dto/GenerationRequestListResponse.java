@@ -37,6 +37,7 @@ public class GenerationRequestListResponse {
         private String thumbnailUrl;
         private Integer imageCount;
         private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
 
         public static GenerationRequestSummary from(GenerationRequest request, String thumbnailUrl, int imageCount) {
             return GenerationRequestSummary.builder()
@@ -45,6 +46,7 @@ public class GenerationRequestListResponse {
                     .thumbnailUrl(thumbnailUrl)
                     .imageCount(imageCount)
                     .createdAt(request.getCreatedAt())
+                    .updatedAt(request.getUpdatedAt())
                     .build();
         }
     }

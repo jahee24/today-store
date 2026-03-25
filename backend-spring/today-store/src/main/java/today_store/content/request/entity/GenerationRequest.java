@@ -3,6 +3,7 @@ package today_store.content.request.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import today_store.authentication.entity.User;
 
 import java.time.LocalDateTime;
@@ -41,6 +42,9 @@ public class GenerationRequest {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
@@ -48,11 +52,17 @@ public class GenerationRequest {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @PrePersist
+    public void onCreate() {
+        updatedAt = LocalDateTime.now();
+    }
+
     public void update(String concept, String additionalNote, String targetAge, String targetGender) {
         if (concept != null) this.concept = concept;
         if (additionalNote != null) this.additionalNote = additionalNote;
         if (targetAge != null) this.targetAge = targetAge;
         if (targetGender != null) this.targetGender = targetGender;
+        updatedAt = LocalDateTime.now();
     }
 
     public void delete() {

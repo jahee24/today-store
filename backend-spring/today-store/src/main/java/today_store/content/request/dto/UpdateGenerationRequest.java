@@ -1,5 +1,6 @@
 package today_store.content.request.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +16,9 @@ public class UpdateGenerationRequest {
     private String additionalNote;
     private String targetAge;
     private String targetGender;
+
+    @NotBlank(message = "imageConfigs are required")
     private String imageConfigs;   // JSON array of ImageConfig
+
     private List<MultipartFile> newImages;
 }

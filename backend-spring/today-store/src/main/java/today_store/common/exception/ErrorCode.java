@@ -34,7 +34,10 @@ public enum ErrorCode {
     GENERATION_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "C005", "Request not found or already deleted"),
 
     // Rate Limit
-    RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "R001", "Rate limit exceeded. Please try again later.");
+    RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "R001", "Rate limit exceeded. Please try again later."),
+
+    // Page
+    INVALID_PAGE_PARAM(HttpStatus.BAD_REQUEST, "P001", "invalid (page, size) parameter");
 
     private final HttpStatus status;
     private final String code;

@@ -23,6 +23,7 @@ public class GenerationRequestDetailResponse {
     private String targetAge;
     private String targetGender;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private List<ImageResponse> images;
 
     public static GenerationRequestDetailResponse from(GenerationRequest request, List<ImageResponse> images) {
@@ -34,6 +35,7 @@ public class GenerationRequestDetailResponse {
                 .targetAge(request.getTargetAge())
                 .targetGender(request.getTargetGender())
                 .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
                 .images(images)
                 .build();
     }

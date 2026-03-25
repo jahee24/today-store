@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import today_store.authentication.entity.User;
+import today_store.common.dto.PageRequest;
 import today_store.common.ratelimit.RateLimit;
 import today_store.common.ratelimit.RateLimitTier;
 import today_store.content.request.dto.*;
@@ -36,12 +37,11 @@ public class GenerationRequestController {
     @GetMapping("/requests")
     @RateLimit(tier = RateLimitTier.LOW)
     public GenerationRequestListResponse getRequests(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @Valid PageRequest pageRequest,
             Authentication authentication) {
 
         User user = userService.getUser(authentication);
-        return requestService.getRequests(user, page, size);
+        return requestService.getRequests(user, pageRequest.toPageable());
     }
 
     @GetMapping("/request/{requestId}")
@@ -64,7 +64,7 @@ public class GenerationRequestController {
         return requestService.updateRequest(authentication.getName(), requestId, request);
     }
 
-    @DeleteMapping("/{requestId}")
+    @DeleteMapping("/request/{requestId}")
     @RateLimit(tier = RateLimitTier.MIDDLE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRequest(

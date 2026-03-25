@@ -10,6 +10,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import today_store.authentication.entity.User;
 import today_store.authentication.exception.AccessDeniedToResourceException;
@@ -84,9 +86,8 @@ public class GenerationRequestService {
     }
 
     @Transactional(readOnly = true)
-    public GenerationRequestListResponse getRequests(User user, int page, int size) {
-        log.debug("Fetching requests for user: {}, page: {}, size: {}", user.getId(), page, size);
-        Pageable pageable = PageRequest.of(page - 1, size);
+    public GenerationRequestListResponse getRequests(User user, Pageable pageable) {
+        log.debug("Fetching requests for user: {}, pageable: {}", user.getId(), pageable);
         Page<GenerationRequest> requestPage = requestRepository.findByUserAndIsDeletedFalseOrderByCreatedAtDesc(user, pageable);
 
         List<GenerationRequestListResponse.GenerationRequestSummary> data = requestPage.getContent().stream()
@@ -196,11 +197,12 @@ public class GenerationRequestService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+        List<String> urlsToDelete = new ArrayList<>();
         int deletedCount = 0;
         for (InputImage img : currentImages) {
             if (!keepIds.contains(img.getId())) {
                 log.debug("Deleting image {} as it's not in the update configuration (State Sync)", img.getId());
-                gcsService.deleteFile(img.getUrl());
+                urlsToDelete.add(img.getUrl());
                 imageRepository.delete(img);
                 deletedCount++;
             }
@@ -248,13 +250,34 @@ public class GenerationRequestService {
             }
         }
 
+        // 5. 트랜잭션 커밋 성공 후 GCS 실제 삭제를 위한 동기화 등록
+        if (!urlsToDelete.isEmpty()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.debug("Transaction committed. Starting GCS file cleanup for {} files.",
+                            urlsToDelete.size());
+                    urlsToDelete.forEach(url -> {
+                        try {
+                            gcsService.deleteFile(url);
+                        } catch (Exception e) {
+                            log.error("Failed to delete GCS file after commit: {}", url, e);
+                        }
+                    });
+                }
+            });
+        }
+
+
+        requestRepository.saveAndFlush(generationRequest);
+
         List<InputImage> finalImages = imageRepository.findByGenerationRequestOrderByDisplayOrderAsc(generationRequest);
         UpdateGenerationResponse.ImageSummary imageSummary = UpdateGenerationResponse.ImageSummary.from(finalImages.size(), addedCount, deletedCount);
 
         log.info("Update completed for request {}. Added: {}, Deleted: {}, Final Count: {}",
                 requestId, addedCount, deletedCount, finalImages.size());
 
-        requestRepository.saveAndFlush(generationRequest);
+
 
         return UpdateGenerationResponse.from(generationRequest, imageSummary);
     }

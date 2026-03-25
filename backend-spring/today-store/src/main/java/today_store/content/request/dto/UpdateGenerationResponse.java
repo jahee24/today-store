@@ -29,7 +29,7 @@ public class UpdateGenerationResponse {
                 .additionalNote(request.getAdditionalNote())
                 .targetAge(request.getTargetAge())
                 .targetGender(request.getTargetGender())
-                .updatedAt(LocalDateTime.now())
+                .updatedAt(request.getUpdatedAt())
                 .imageSummary(imageSummary)
                 .build();
     }
