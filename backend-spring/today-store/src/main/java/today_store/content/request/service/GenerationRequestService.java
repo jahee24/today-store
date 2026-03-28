@@ -70,7 +70,7 @@ public class GenerationRequestService {
             String description = request.getImageDescriptions().get(i);
 
             log.debug("Uploading image {}/{} for request ID: {}", (i + 1), request.getImages().size(), savedRequest.getId());
-            String url = gcsService.uploadFile(imageFile, "requests/" + savedRequest.getId());
+            String url = gcsService.uploadFile(imageFile, "requests");
 
             InputImage inputImage = InputImage.builder()
                     .generationRequest(savedRequest)
@@ -237,7 +237,7 @@ public class GenerationRequestService {
                         log.warn("File name mismatch during update: {}", config.getFileName());
                         throw new FileNameMismatchException();
                     }
-                    String url = gcsService.uploadFile(file, "requests/" + requestId);
+                    String url = gcsService.uploadFile(file, "requests");
                     InputImage newImg = InputImage.builder()
                             .generationRequest(generationRequest)
                             .url(url)

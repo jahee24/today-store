@@ -11,6 +11,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -25,8 +27,13 @@ public class GcsService {
     private String bucketName;
 
     public String uploadFile(MultipartFile file, String folder) {
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+
         String uuid = UUID.randomUUID().toString();
-        String objectName = folder + "/" + uuid + "_" + file.getOriginalFilename();
+
+        String objectName = String.format("%s/%s/%s_%s",
+                datePath, folder, uuid, file.getOriginalFilename());
+
         try {
             BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectName)
                     .setContentType(file.getContentType())
