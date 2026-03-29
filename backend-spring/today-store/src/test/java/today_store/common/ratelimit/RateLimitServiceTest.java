@@ -1,14 +1,49 @@
 package today_store.common.ratelimit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
+import io.github.bucket4j.distributed.proxy.RemoteBucketBuilder;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("RateLimit 서비스 테스트")
 class RateLimitServiceTest {
 
-    private final RateLimitService rateLimitService = new RateLimitService();
+    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final ProxyManager<String> proxyManager = mock(ProxyManager.class);
+    private final RateLimitService rateLimitService = new RateLimitService(proxyManager);
+
+@BeforeEach
+void setUp() {
+    RemoteBucketBuilder<String> builder = mock(RemoteBucketBuilder.class);
+    when(proxyManager.builder()).thenReturn(builder);
+
+    when(builder.build(anyString(), any(Supplier.class))).thenAnswer(invocation -> {
+        String key = invocation.getArgument(0);
+        Supplier<BucketConfiguration> configSupplier = invocation.getArgument(1);
+
+        return (io.github.bucket4j.distributed.BucketProxy) buckets.computeIfAbsent(key, k -> {
+            BucketConfiguration config = configSupplier.get();
+            Bucket localBucket = Bucket.builder()
+                    .addLimit(config.getBandwidths()[0])
+                    .build();
+
+            io.github.bucket4j.distributed.BucketProxy proxy = mock(io.github.bucket4j.distributed.BucketProxy.class);
+            when(proxy.tryConsume(anyLong())).thenAnswer(inv -> localBucket.tryConsume((Long) inv.getArgument(0)));
+            return (Bucket) proxy;
+        });
+    });
+}
 
     @Test
     @DisplayName("같은 키와 티어는 용량만큼만 허용")
