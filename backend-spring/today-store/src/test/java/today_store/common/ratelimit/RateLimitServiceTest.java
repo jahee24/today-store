@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.distributed.BucketProxy;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import io.github.bucket4j.distributed.proxy.RemoteBucketBuilder;
 import java.util.Map;
@@ -19,31 +20,31 @@ import org.junit.jupiter.api.Test;
 @DisplayName("RateLimit 서비스 테스트")
 class RateLimitServiceTest {
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Map<String, BucketProxy> buckets = new ConcurrentHashMap<>();
     private final ProxyManager<String> proxyManager = mock(ProxyManager.class);
     private final RateLimitService rateLimitService = new RateLimitService(proxyManager);
 
-@BeforeEach
-void setUp() {
-    RemoteBucketBuilder<String> builder = mock(RemoteBucketBuilder.class);
-    when(proxyManager.builder()).thenReturn(builder);
+    @BeforeEach
+    void setUp() {
+        RemoteBucketBuilder<String> builder = mock(RemoteBucketBuilder.class);
+        when(proxyManager.builder()).thenReturn(builder);
 
-    when(builder.build(anyString(), any(Supplier.class))).thenAnswer(invocation -> {
-        String key = invocation.getArgument(0);
-        Supplier<BucketConfiguration> configSupplier = invocation.getArgument(1);
+        when(builder.build(anyString(), any(Supplier.class))).thenAnswer(invocation -> {
+            String key = invocation.getArgument(0);
+            Supplier<BucketConfiguration> configSupplier = invocation.getArgument(1);
 
-        return (io.github.bucket4j.distributed.BucketProxy) buckets.computeIfAbsent(key, k -> {
-            BucketConfiguration config = configSupplier.get();
-            Bucket localBucket = Bucket.builder()
-                    .addLimit(config.getBandwidths()[0])
-                    .build();
+            return buckets.computeIfAbsent(key, ignored -> {
+                BucketConfiguration config = configSupplier.get();
+                Bucket localBucket = Bucket.builder()
+                        .addLimit(config.getBandwidths()[0])
+                        .build();
 
-            io.github.bucket4j.distributed.BucketProxy proxy = mock(io.github.bucket4j.distributed.BucketProxy.class);
-            when(proxy.tryConsume(anyLong())).thenAnswer(inv -> localBucket.tryConsume((Long) inv.getArgument(0)));
-            return (Bucket) proxy;
+                BucketProxy proxy = mock(BucketProxy.class);
+                when(proxy.tryConsume(anyLong())).thenAnswer(inv -> localBucket.tryConsume(inv.getArgument(0, Long.class)));
+                return proxy;
+            });
         });
-    });
-}
+    }
 
     @Test
     @DisplayName("같은 키와 티어는 용량만큼만 허용")
