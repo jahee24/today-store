@@ -11,9 +11,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import today_store.authentication.dto.LoginRequest;
+import today_store.authentication.exception.AccessDeniedToResourceException;
 import today_store.authentication.exception.InvalidRefreshTokenException;
+import today_store.common.dto.PageRequest;
 import today_store.common.dto.ErrorResponse;
+import today_store.content.request.dto.CreateGenerationRequest;
+import today_store.content.request.dto.UpdateGenerationRequest;
+import today_store.content.request.exception.FileNameMismatchException;
+import today_store.content.request.exception.GenerationRequestNotFoundException;
+import today_store.content.request.exception.InvalidRequestBodyFormatException;
 
 @DisplayName("전역 예외 처리기 테스트")
 class GlobalExceptionHandlerTest {
@@ -89,9 +97,210 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().getErrors().get(0).getReason()).isEqualTo("소셜 로그인 제공자(provider)는 필수 항목입니다.");
     }
 
+    @Test
+    @DisplayName("생성 요청 검증 실패를 C001 응답으로 변환")
+    void shouldHandleCreateGenerationValidationException() throws Exception {
+        // 생성 요청 검증 실패는 C001 에러 응답으로 변환해야 한다.
+
+        // given
+        Method method = ValidationFixture.class.getDeclaredMethod("handleCreateGeneration", CreateGenerationRequest.class);
+        MethodParameter methodParameter = new MethodParameter(method, 0);
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(
+                CreateGenerationRequest.builder().build(),
+                "createGenerationRequest"
+        );
+        bindingResult.addError(new FieldError(
+                "createGenerationRequest",
+                "concept",
+                null,
+                false,
+                null,
+                null,
+                "Concept is required"
+        ));
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleMethodArgumentNotValidException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C001");
+        assertThat(response.getBody().getMessage()).isEqualTo("Missing required fields");
+        assertThat(response.getBody().getErrors()).hasSize(1);
+        assertThat(response.getBody().getErrors().get(0).getField()).isEqualTo("concept");
+    }
+
+    @Test
+    @DisplayName("생성 요청 수정 검증 실패를 C001 응답으로 변환")
+    void shouldHandleUpdateGenerationValidationException() throws Exception {
+        // 생성 요청 수정 검증 실패는 C001 에러 응답으로 변환해야 한다.
+
+        // given
+        Method method = ValidationFixture.class.getDeclaredMethod("handleUpdateGeneration", UpdateGenerationRequest.class);
+        MethodParameter methodParameter = new MethodParameter(method, 0);
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(
+                UpdateGenerationRequest.builder().build(),
+                "updateGenerationRequest"
+        );
+        bindingResult.addError(new FieldError(
+                "updateGenerationRequest",
+                "imageConfigs",
+                "",
+                false,
+                null,
+                null,
+                "imageConfigs are required"
+        ));
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleMethodArgumentNotValidException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C001");
+        assertThat(response.getBody().getMessage()).isEqualTo("Missing required fields");
+        assertThat(response.getBody().getErrors()).hasSize(1);
+        assertThat(response.getBody().getErrors().get(0).getField()).isEqualTo("imageConfigs");
+    }
+
+    @Test
+    @DisplayName("페이지 검증 실패를 P001 응답으로 변환")
+    void shouldHandlePageRequestValidationException() throws Exception {
+        // 페이지 파라미터 검증 실패는 P001 에러 응답으로 변환해야 한다.
+
+        // given
+        Method method = ValidationFixture.class.getDeclaredMethod("handlePageRequest", PageRequest.class);
+        MethodParameter methodParameter = new MethodParameter(method, 0);
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new PageRequest(), "pageRequest");
+        bindingResult.addError(new FieldError(
+                "pageRequest",
+                "page",
+                "0",
+                false,
+                null,
+                null,
+                "Page number should be greater than 1"
+        ));
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleMethodArgumentNotValidException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("P001");
+        assertThat(response.getBody().getMessage()).isEqualTo("invalid (page, size) parameter");
+        assertThat(response.getBody().getErrors()).hasSize(1);
+        assertThat(response.getBody().getErrors().get(0).getField()).isEqualTo("page");
+    }
+
+    @Test
+    @DisplayName("파일 크기 초과를 C004 응답으로 변환")
+    void shouldHandleMaxUploadSizeExceededException() {
+        // 업로드 파일 크기 초과는 C004 에러 응답으로 변환해야 한다.
+
+        // given
+        MaxUploadSizeExceededException exception = new MaxUploadSizeExceededException(10L);
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleMaxUploadSizeExceededException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(413);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C004");
+        assertThat(response.getBody().getMessage()).isEqualTo("File size limit exceeded");
+    }
+
+    @Test
+    @DisplayName("파일명 불일치를 C002 응답으로 변환")
+    void shouldHandleFileNameMismatchException() {
+        // 파일명 불일치 예외는 C002 에러 응답으로 변환해야 한다.
+
+        // given
+        FileNameMismatchException exception = new FileNameMismatchException();
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleCustomException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C002");
+        assertThat(response.getBody().getMessage()).isEqualTo("File name mismatch in imageConfigs");
+    }
+
+    @Test
+    @DisplayName("잘못된 요청 본문 형식을 C003 응답으로 변환")
+    void shouldHandleInvalidRequestBodyFormatException() {
+        // 잘못된 요청 본문 형식 예외는 C003 에러 응답으로 변환해야 한다.
+
+        // given
+        InvalidRequestBodyFormatException exception = new InvalidRequestBodyFormatException();
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleCustomException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C003");
+        assertThat(response.getBody().getMessage()).isEqualTo("Invalid request body format");
+    }
+
+    @Test
+    @DisplayName("생성 요청 없음 예외를 C005 응답으로 변환")
+    void shouldHandleGenerationRequestNotFoundException() {
+        // 생성 요청이 없으면 C005 에러 응답으로 변환해야 한다.
+
+        // given
+        GenerationRequestNotFoundException exception = new GenerationRequestNotFoundException();
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleCustomException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C005");
+        assertThat(response.getBody().getMessage()).isEqualTo("Request not found or already deleted");
+    }
+
+    @Test
+    @DisplayName("리소스 소유권 불일치를 A008 응답으로 변환")
+    void shouldHandleAccessDeniedToResourceException() {
+        // 리소스 소유권 불일치 예외는 A008 에러 응답으로 변환해야 한다.
+
+        // given
+        AccessDeniedToResourceException exception = new AccessDeniedToResourceException();
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleCustomException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(403);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("A008");
+        assertThat(response.getBody().getMessage()).isEqualTo("Access denied. Resource ownership mismatch.");
+    }
+
     private static class ValidationFixture {
 
         public void handle(@Valid LoginRequest loginRequest) {
+        }
+
+        public void handleCreateGeneration(@Valid CreateGenerationRequest createGenerationRequest) {
+        }
+
+        public void handleUpdateGeneration(@Valid UpdateGenerationRequest updateGenerationRequest) {
+        }
+
+        public void handlePageRequest(@Valid PageRequest pageRequest) {
         }
     }
 }
