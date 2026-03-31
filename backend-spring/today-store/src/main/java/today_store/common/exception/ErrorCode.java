@@ -32,12 +32,22 @@ public enum ErrorCode {
     INVALID_REQUEST_BODY_FORMAT(HttpStatus.BAD_REQUEST, "C003", "Invalid request body format"),
     FILE_SIZE_LIMIT_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "C004", "File size limit exceeded"),
     GENERATION_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "C005", "Request not found or already deleted"),
+    INVALID_REGENERATION_REQUEST(HttpStatus.BAD_REQUEST, "C006", "Empty feedback or Invalid target platform"),
+    CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "C007", "Content not found or already deleted"),
+
+    // Generation Task
+    GENERATION_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "G001", "Generation task is already in progress or completed"),
+    TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "G002", "Task ID not found"),
 
     // Rate Limit
     RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "R001", "Rate limit exceeded. Please try again later."),
 
     // Page
-    INVALID_PAGE_PARAM(HttpStatus.BAD_REQUEST, "P001", "invalid (page, size) parameter");
+    INVALID_PAGE_PARAM(HttpStatus.BAD_REQUEST, "P001", "invalid (page, size) parameter"),
+
+    // AI / Gemini
+    AI_RESPONSE_EMPTY(HttpStatus.INTERNAL_SERVER_ERROR, "AI001", "Gemini returned empty response"),
+    AI_PARSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI002", "Failed to parse AI response");
 
     private final HttpStatus status;
     private final String code;

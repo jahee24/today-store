@@ -81,3 +81,7 @@ app:
     prefix: ${GCS_PREFIX:uploads/}
     signed-url-enabled: ${SIGNED_URL_ENABLED:false}
     signed-url-duration-minutes: ${SIGNED_URL_DURATION_MINUTES:15}
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: "gemini-3-flash-preview"
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
