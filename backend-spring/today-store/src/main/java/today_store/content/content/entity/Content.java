@@ -1,11 +1,7 @@
 package today_store.content.content.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -20,9 +16,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "contents")
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class Content {
 
@@ -40,6 +35,7 @@ public class Content {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "instagram_hashtags", columnDefinition = "JSONB")
+    @Builder.Default
     private List<String> instagramHashtags = new ArrayList<>();
 
     @Column(name = "karrot_text", columnDefinition = "TEXT")
@@ -47,6 +43,7 @@ public class Content {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "karrot_tags", columnDefinition = "JSONB")
+    @Builder.Default
     private List<String> karrotTags = new ArrayList<>();
 
     @Column(name = "naver_text", columnDefinition = "TEXT")
@@ -54,6 +51,7 @@ public class Content {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "naver_keywords", columnDefinition = "JSONB")
+    @Builder.Default
     private List<String> naverKeywords = new ArrayList<>();
 
     @CreationTimestamp
@@ -77,4 +75,24 @@ public class Content {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public void updateInstagram(String text, List<String> hashtags) {
+        if (text != null) this.instagramText = text;
+        if (hashtags != null) this.instagramHashtags = hashtags;
+    }
+
+    public void updateKarrot(String text, List<String> tags) {
+        if (text != null) this.karrotText = text;
+        if (tags != null) this.karrotTags = tags;
+    }
+
+    public void updateNaver(String text, List<String> keywords) {
+        if (text != null) this.naverText = text;
+        if (keywords != null) this.naverKeywords = keywords;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
 }
