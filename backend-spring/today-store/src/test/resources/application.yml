@@ -64,3 +64,7 @@ app:
   gcs:
     bucket: test-bucket
     prefix: uploads/
+  gemini:
+    api-key: test_gemini_key
+    model: "gemini-3-flash-preview"
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
