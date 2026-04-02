@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../data/providers/auth_provider.dart';
-import 'login_loading_view.dart';
+import 'login_loading.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});

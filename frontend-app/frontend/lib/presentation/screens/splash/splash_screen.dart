@@ -61,7 +61,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<SplashStatus>>(splashProvider, (_, next) {
+    ref.listen<AsyncValue<SplashStatus>> (splashProvider, (_, next) {
       next.whenData(_handleStatus);
     });
 
@@ -72,13 +72,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [AppTheme.primaryColor, Color(0xFF7A3AED)],
-          ),
-        ),
+        color: AppTheme.primaryColor,
         child: SafeArea(
           child: Column(
             children: [

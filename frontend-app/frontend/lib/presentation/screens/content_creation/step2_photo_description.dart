@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../data/providers/content_creation_provider.dart';
 
 import '../../../config/app_theme.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
@@ -9,29 +10,33 @@ import '../../widgets/cards/photo_description_card.dart';
 import '../../widgets/inputs/request_text_field.dart';
 import '../../widgets/progress/step_indicator_line.dart';
 
-class Step2PhotoDescription extends StatefulWidget {
-  final List<XFile> images;
-
-  const Step2PhotoDescription({
-    super.key,
-    required this.images,
-  });
+class Step2PhotoDescription extends ConsumerStatefulWidget {
+  const Step2PhotoDescription({super.key});
 
   @override
-  State<Step2PhotoDescription> createState() => _Step2PhotoDescriptionState();
+  ConsumerState<Step2PhotoDescription> createState() => _Step2PhotoDescriptionState();
 }
 
-class _Step2PhotoDescriptionState extends State<Step2PhotoDescription> {
+class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
   late final List<TextEditingController> _photoControllers;
   final TextEditingController _extraRequestController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    
+    final contentState = ref.read(contentCreationProvider);
+
     _photoControllers = List.generate(
-      widget.images.length,
-      (_) => TextEditingController(),
+      contentState.images.length,
+      (index) => TextEditingController(
+        text: index < contentState.descriptions.length
+        ? contentState.descriptions[index]
+        : '' ,
+      ),
     );
+
+    _extraRequestController.text = contentState.extraRequest;
   }
 
   @override
@@ -58,6 +63,8 @@ class _Step2PhotoDescriptionState extends State<Step2PhotoDescription> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final contentState = ref.watch(contentCreationProvider);
+    final images = contentState.images;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -111,16 +118,19 @@ class _Step2PhotoDescriptionState extends State<Step2PhotoDescription> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      ...List.generate(widget.images.length, (index) {
+                      ...List.generate(images.length, (index) {
                         return Padding(
                           padding: EdgeInsets.only(
-                            bottom: index == widget.images.length - 1 ? 0 : 18,
+                            bottom: index == images.length - 1 ? 0 : 18,
                           ),
                           child: PhotoDescriptionCard(
                             label: '사진 ${index + 1}',
                             controller: _photoControllers[index],
                             hintText: '사진에 대한 설명을 입력해주세요',
-                            imagePath: widget.images[index].path,
+                            imagePath: images[index].path,
+                            onChanged: (value) {
+                              ref.read(contentCreationProvider.notifier).setDescription(index, value);
+                            }
                           ),
                         );
                       }),
@@ -144,6 +154,9 @@ class _Step2PhotoDescriptionState extends State<Step2PhotoDescription> {
                         controller: _extraRequestController,
                         hintText: '예) 2030 여성 타겟, 밝은 톤으로 작성해줘',
                         maxLines: 4,
+                        onChanged: (value) {
+                          ref.read(contentCreationProvider.notifier).setExtraRequest(value);
+                        },
                       ),
                     ],
                   ),
