@@ -154,10 +154,11 @@ public class ContentService {
 
                         // Save ContentImages (map from input images)
                         for (InputImage inputImage : inputImages) {
+                            String snapshotUrl = gcsService.copyFile(inputImage.getUrl(), "contents");
                             ContentImage contentImage = ContentImage.builder()
                                     .content(savedContent)
-                                    .inputImage(inputImage)
-                                    .url(inputImage.getUrl())
+                                    .inputImageId(inputImage.getId())
+                                    .url(snapshotUrl)
                                     .build();
                             contentImageRepository.save(contentImage);
                         }
@@ -357,7 +358,7 @@ public class ContentService {
                         for (ContentImage originalImg : originalImages) {
                             ContentImage newImg = ContentImage.builder()
                                     .content(savedContent)
-                                    .inputImage(originalImg.getInputImage())
+                                    .inputImageId(originalImg.getInputImageId())
                                     .url(originalImg.getUrl())
                                     .build();
                             contentImageRepository.save(newImg);

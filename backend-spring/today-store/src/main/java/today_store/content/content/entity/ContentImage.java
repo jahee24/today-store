@@ -12,7 +12,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "content_images")
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -27,9 +26,8 @@ public class ContentImage {
     @JoinColumn(name = "content_id", nullable = false)
     private Content content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "input_image_id", nullable = false)
-    private InputImage inputImage;
+    @Column(name = "input_image_id", nullable = false)
+    private UUID inputImageId;
 
     @Column(nullable = false, length = 500)
     private String url;

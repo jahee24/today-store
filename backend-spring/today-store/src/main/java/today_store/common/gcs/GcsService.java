@@ -70,6 +70,31 @@ public class GcsService {
         }
     }
 
+    public String copyFile(String sourceObjectName, String targetFolder) {
+        if (sourceObjectName == null || sourceObjectName.isEmpty()) {
+            return null;
+        }
+
+        String fileName = sourceObjectName.substring(sourceObjectName.lastIndexOf("/") + 1);
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String uuid = UUID.randomUUID().toString();
+        String targetObjectName = String.format("%s/%s/%s_%s",
+                datePath, targetFolder, uuid, fileName);
+
+        try {
+            Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
+                    .setSource(BlobId.of(bucketName, sourceObjectName))
+                    .setTarget(BlobId.of(bucketName, targetObjectName))
+                    .build();
+            storage.copy(request);
+            log.info("Successfully copied file from {} to {}", sourceObjectName, targetObjectName);
+            return targetObjectName;
+        } catch (Exception e) {
+            log.error("Failed to copy file in GCS: {}", e.getMessage());
+            throw new RuntimeException("GCS copy failed", e);
+        }
+    }
+
     private String sanitize(String input) {
         return (input == null) ? "" : input.replaceAll("[\r\n]", " ");
     }

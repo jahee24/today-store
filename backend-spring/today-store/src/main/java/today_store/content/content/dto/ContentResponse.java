@@ -81,7 +81,7 @@ public class ContentResponse {
                 .images(images.stream()
                         .map(img -> ContentImageResponse.builder()
                                 .id(img.getId())
-                                .inputImageId(img.getInputImage().getId())
+                                .inputImageId(img.getInputImageId())
                                 .url(urlSigner != null ? urlSigner.apply(img.getUrl()) : img.getUrl())
                                 .createdAt(img.getCreatedAt())
                                 .build())
