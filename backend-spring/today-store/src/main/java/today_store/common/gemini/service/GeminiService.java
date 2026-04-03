@@ -193,21 +193,23 @@ public class GeminiService {
                 .map(this::processResponse);
     }
 
-    // 임시로 적용한 재생성 프롬프트(수정 예정)
     public Mono<GeminiParsedResponse> generateProcessedRegenerationContent(GeminiRegenerationRequest request) {
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("당신은 전문 마케팅 AI 에이전트입니다. 다음 정보를 바탕으로 홍보 문구와 태그를 재작성해주세요.\n\n");
-        promptBuilder.append("### 기존 문구:\n");
-        promptBuilder.append("- 인스타그램: ").append(request.getOriginalInstagramText()).append("\n");
-        promptBuilder.append("- 당근마켓: ").append(request.getOriginalKarrotText()).append("\n");
-        promptBuilder.append("- 네이버: ").append(request.getOriginalNaverText()).append("\n\n");
+        promptBuilder.append("### 대상 플랫폼: ").append(request.getTarget()).append("\n");
+        promptBuilder.append("### 기존 문구 (").append(request.getTarget()).append("):\n");
+        promptBuilder.append(request.getOriginalText()).append("\n\n");
+
+        if (request.getOriginalHashtags() != null && !request.getOriginalHashtags().isEmpty()) {
+            promptBuilder.append("### 기존 해시태그:\n");
+            promptBuilder.append(String.join(", ", request.getOriginalHashtags())).append("\n\n");
+        }
 
         promptBuilder.append("### 사용자 피드백: ").append(request.getFeedback()).append("\n");
 
         promptBuilder.append("응답은 반드시 아래 JSON 형식을 지켜주세요:\n");
         promptBuilder.append("""
                             {
-                                "photo_info": "AI의 시각적 분석 결과",
                                 "text": "생성된 마케팅 문구",
                                 "hashtags": ["#태그1", "#태그2", "#태그3"]
                             }
@@ -216,7 +218,6 @@ public class GeminiService {
         return generateContent(promptBuilder.toString(), null)
                 .map(this::processResponse);
     }
-
 
     public GeminiParsedResponse processResponse(GeminiResponse response) {
         String text = response.getText();

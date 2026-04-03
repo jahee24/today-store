@@ -317,12 +317,28 @@ public class ContentService {
                     return transactionTemplate.execute(status -> {
                         Content originalContent = contentRepository.findById(originalContentId).orElseThrow();
 
+                        String originalText;
+                        List<String> originalHashtags;
+                        String target = regenerateRequest.getTarget();
+                        if ("INSTAGRAM".equals(target)) {
+                            originalText = originalContent.getInstagramText();
+                            originalHashtags = originalContent.getInstagramHashtags();
+                        } else if ("KARROT".equals(target)) {
+                            originalText = originalContent.getKarrotText();
+                            originalHashtags = originalContent.getKarrotTags();
+                        } else if ("NAVER".equals(target)) {
+                            originalText = originalContent.getNaverText();
+                            originalHashtags = originalContent.getNaverKeywords();
+                        } else {
+                            originalText = "";
+                            originalHashtags = List.of();
+                        }
+
                         return GeminiRegenerationRequest.builder()
-                                .originalInstagramText(originalContent.getInstagramText())
-                                .originalKarrotText(originalContent.getKarrotText())
-                                .originalNaverText(originalContent.getNaverText())
+                                .originalText(originalText)
+                                .originalHashtags(originalHashtags)
                                 .feedback(regenerateRequest.getFeedback())
-                                .targets(regenerateRequest.getTargets())
+                                .target(target)
                                 .build();
                     });
                 })
@@ -335,16 +351,16 @@ public class ContentService {
                         GenerationRequest request = requestRepository.findById(requestId).orElseThrow();
                         Content originalContent = contentRepository.findById(originalContentId).orElseThrow();
 
-                        // Merge with original content (Only update target platforms)
-                        List<String> targets = regenerateRequest.getTargets();
+                        // Merge with original content (Only update target platform)
+                        String target = regenerateRequest.getTarget();
                         Content newContent = Content.builder()
                                 .generationRequest(request)
-                                .instagramText(targets.contains("INSTAGRAM") && parsed.getText() != null ? parsed.getText() : originalContent.getInstagramText())
-                                .instagramHashtags(targets.contains("INSTAGRAM") && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getInstagramHashtags())
-                                .karrotText(targets.contains("KARROT") && parsed.getText() != null ? parsed.getText() : originalContent.getKarrotText())
-                                .karrotTags(targets.contains("KARROT") && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getKarrotTags())
-                                .naverText(targets.contains("NAVER") && parsed.getText() != null ? parsed.getText() : originalContent.getNaverText())
-                                .naverKeywords(targets.contains("NAVER") && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getNaverKeywords())
+                                .instagramText("INSTAGRAM".equals(target) && parsed.getText() != null ? parsed.getText() : originalContent.getInstagramText())
+                                .instagramHashtags("INSTAGRAM".equals(target) && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getInstagramHashtags())
+                                .karrotText("KARROT".equals(target) && parsed.getText() != null ? parsed.getText() : originalContent.getKarrotText())
+                                .karrotTags("KARROT".equals(target) && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getKarrotTags())
+                                .naverText("NAVER".equals(target) && parsed.getText() != null ? parsed.getText() : originalContent.getNaverText())
+                                .naverKeywords("NAVER".equals(target) && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getNaverKeywords())
                                 .generationType(GenerationType.TEXT_ONLY)
                                 .aiModel(apiLog.getModel())
                                 .createdAt(LocalDateTime.now())

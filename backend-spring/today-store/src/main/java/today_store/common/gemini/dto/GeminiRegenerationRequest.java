@@ -12,9 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GeminiRegenerationRequest {
-    private String originalInstagramText;
-    private String originalKarrotText;
-    private String originalNaverText;
+    private String originalText;
+    private List<String> originalHashtags;
     private String feedback;
-    private List<String> targets;
+    private String target;
 }

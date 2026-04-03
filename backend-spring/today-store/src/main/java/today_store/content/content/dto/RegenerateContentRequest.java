@@ -17,9 +17,9 @@ public class
 RegenerateContentRequest {
     @NotBlank(message = "Feedback is required")
     private String feedback;
-    
+
     private boolean regenerateImage;
-    
-    @NotEmpty(message = "Target platforms are required")
-    private List<String> targets;
+
+    @NotBlank(message = "Target platform is required")
+    private String target;
 }
