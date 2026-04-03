@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../../config/app_theme.dart';
 import 'package:go_router/go_router.dart';
-import '../../widgets/buttons/primary_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProfileSetupScreen extends StatefulWidget {
+import '../../../config/app_theme.dart';
+import '../../widgets/buttons/primary_button.dart';
+import '../../../data/providers/store_provider.dart';
+import '../../models/address_pick_result.dart';
+
+class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({super.key});
 
   @override
-  State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
+  ConsumerState<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
 }
 
-class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
+class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final TextEditingController _storeNameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final FocusNode _storeNameFocusNode = FocusNode();
@@ -18,6 +22,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   String? selectedBusinessType;
   String? selectedStyle;
+
+  double? _latitude;
+  double? _longitude;
+
+  AddressPickResult? _selectedAddress;
 
   final List<String> businessTypes = ['음식점', '카페', '소매점', '미용', '기타'];
   final List<String> styleOptions = ['무난', '깔끔', '친근', 'meme'];
@@ -54,11 +63,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   bool get _isStoreNameFilled => _storeNameController.text.trim().isNotEmpty;
   bool get _isBusinessTypeFilled => selectedBusinessType != null;
   bool get _isAddressFilled => _addressController.text.trim().isNotEmpty;
+  bool get _isLocationFilled => _latitude != null && _longitude != null;
   bool get _isStyleFilled => selectedStyle != null;
 
   bool get _isStoreNameError => _showValidation && !_isStoreNameFilled;
   bool get _isBusinessTypeError => _showValidation && !_isBusinessTypeFilled;
-  bool get _isAddressError => _showValidation && !_isAddressFilled;
+  bool get _isAddressError => _showValidation && (!_isAddressFilled || !_isLocationFilled);
 
   int get _currentStepCount {
     int count = 0;
@@ -71,7 +81,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   bool get _canGoNext {
-    return _isStoreNameFilled && _isBusinessTypeFilled && _isAddressFilled;
+    return _isStoreNameFilled && _isBusinessTypeFilled && _isAddressFilled && _isLocationFilled;
+  }
+
+  Future<void> _handleAddressSearch() async {
+    _addressFocusNode.unfocus();
+
+    final result = await context.push<AddressPickResult>('/address-search');
+
+    if (result == null) return;
+
+    setState(() {
+      _selectedAddress = result;
+      _addressController.text = result.displayAddress;
+      _latitude = result.latitude;
+      _longitude = result.longitude;
+    });
   }
 
   void _handleNext() {
@@ -81,12 +106,32 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     if (!_canGoNext) return;
 
-    context.go('/dashboard');
+    ref.read(storeProvider.notifier).createStore(
+      storeName: _storeNameController.text, 
+      businessType: selectedBusinessType!, 
+      address: _addressController.text, 
+      latitude: _latitude!, 
+      longitude: _longitude!,
+      preferredStyleLabel: selectedStyle,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final storeState = ref.watch(storeProvider);
+
+    ref.listen<StoreState>(storeProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage!)),
+        );
+      }
+
+      if (next.createdStore != null && previous?.createdStore == null) {
+        context.go('/dashboard');
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceColor,
@@ -180,6 +225,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         focusNode: _addressFocusNode,
                         hintText: '주소 검색',
                         hasError: _isAddressError,
+                        readOnly: true,
+                        onTap: _handleAddressSearch,
                       ),
                       const SizedBox(height: 26),
 
@@ -221,7 +268,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               PrimaryButton(
                 text: '다음으로',
-                onPressed: _handleNext,
+                onPressed: storeState.isLoading ? null : _handleNext,
+                isLoading: storeState.isLoading,
               ),
               const SizedBox(height: 16),
             ],
@@ -280,6 +328,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     required FocusNode focusNode,
     required String hintText,
     required bool hasError,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     final bool isFocused = focusNode.hasFocus;
     final bool hasValue = controller.text.trim().isNotEmpty;
@@ -292,6 +342,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return TextField(
       controller: controller,
       focusNode: focusNode,
+      readOnly: readOnly,
+      onTap: onTap,
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w700,

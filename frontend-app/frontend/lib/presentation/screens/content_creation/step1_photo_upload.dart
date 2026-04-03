@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:fronted/presentation/widgets/dialogs/permission_alert_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../data/providers/content_creation_provider.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../services/image_service.dart';
@@ -12,14 +14,14 @@ import '../../widgets/cards/dotted_lined_card.dart';
 import '../../widgets/progress/step_indicator_line.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 
-class Step1PhotoUpload extends StatefulWidget {
+class Step1PhotoUpload extends ConsumerStatefulWidget {
   const Step1PhotoUpload({super.key});
 
   @override
-  State<Step1PhotoUpload> createState() => _Step1PhotoUploadState();
+  ConsumerState<Step1PhotoUpload> createState() => _Step1PhotoUploadState();
 }
 
-class _Step1PhotoUploadState extends State<Step1PhotoUpload> {
+class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
   static const int _maxImages = 5;
 
   final List<XFile> _images = [];
@@ -131,12 +133,20 @@ class _Step1PhotoUploadState extends State<Step1PhotoUpload> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _images.addAll(ref.read(contentCreationProvider).images);
+  }
+
   void _removeImage(int index) {
     if (index < 0 || index >= _images.length) return;
 
     setState(() {
       _images.removeAt(index);
     });
+
+    ref.read(contentCreationProvider.notifier).removeImageAt(index);
   }
 
   void _handleNext() {
@@ -145,10 +155,8 @@ class _Step1PhotoUploadState extends State<Step1PhotoUpload> {
       return;
     }
 
-    context.go(
-      '/step2',
-      extra: _images,
-    );
+    ref.read(contentCreationProvider.notifier).setImages(_images);
+    context.go('/step2');
   }
 
   void _showSnackBar(String message) {

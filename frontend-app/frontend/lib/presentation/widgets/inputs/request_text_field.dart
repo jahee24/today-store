@@ -5,12 +5,14 @@ class RequestTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final int maxLines;
+  final ValueChanged<String>? onChanged;
 
   const RequestTextField({
     super.key,
     required this.controller,
     required this.hintText,
     this.maxLines = 4,
+    this.onChanged,
   });
 
   @override
@@ -18,6 +20,7 @@ class RequestTextField extends StatelessWidget {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      onChanged: onChanged,
       style: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w500,

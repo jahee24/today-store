@@ -1,4 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide AuthApi;
+import 'package:google_sign_in/google_sign_in.dart';
+
 import '../datasources/remote/api_client.dart';
 import '../datasources/remote/auth_api.dart';
 import '../repositories/auth_repository.dart';
@@ -70,22 +74,41 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) : super(const AuthState(status: AuthStatus.initial));
 
   Future<void> loginWithGoogle() async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    state = state.copyWith(
+      status: AuthStatus.loading, 
+      errorMessage: null,
+    );
 
     try {
+      final googleSignIn = GoogleSignIn(
+        scopes: <String>['email', 'profile'],
+      );
 
-      await Future.delayed(const Duration(seconds: 20));
-      // 실제 Google SDK 로그인 붙이기
-      //final socialAccessToken = 'google_social_access_token';
+      final GoogleSignInAccount? account = await googleSignIn.signIn();
+
+      if (account == null) {
+        state = state.copyWith(
+          status: AuthStatus.unauthenticated,
+          errorMessage: 'Google 로그인이 취소되었어요.',
+        );
+        return;
+      }
+
+      final GoogleSignInAuthentication auth = await account.authentication;
+      final String? accessToken = auth.accessToken;
+
+      if (accessToken == null || accessToken.isEmpty) {
+        throw Exception('Google 액세스 토큰을 가져오지 못했어요.');
+      }
 
       final result = await authRepository.oauthLogin(
         provider: 'google', 
-        accessToken: 'google_social_access_token', // socialAccessToken
+        accessToken: accessToken,
       );
-
       state = state.copyWith(
         status: AuthStatus.authenticated,
         isFirstLogin: result.isFirstLogin,
+        errorMessage: null,
       );
     } catch (e) {
       state = state.copyWith(
@@ -99,17 +122,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
-      // 실제 카카오 SDK 로그인 붙이기
-      final socialAccessToken = 'kakao_social_access_token';
+      OAuthToken token;
+
+      if (await isKakaoTalkInstalled()) {
+        try {
+          token = await UserApi.instance.loginWithKakaoTalk();
+        } catch (error) {
+            token = await UserApi.instance.loginWithKakaoAccount();
+        }
+      } else {
+        token = await UserApi.instance.loginWithKakaoAccount();
+      }
 
       final result = await authRepository.oauthLogin(
         provider: 'kakao', 
-        accessToken: socialAccessToken,
+        accessToken: token.accessToken,
       );
 
       state = state.copyWith(
         status: AuthStatus.authenticated,
         isFirstLogin: result.isFirstLogin,
+        errorMessage: null,
       );
     } catch (e) {
       state = state.copyWith(

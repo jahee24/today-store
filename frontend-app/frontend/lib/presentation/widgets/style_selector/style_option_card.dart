@@ -3,18 +3,20 @@ import '../../../../config/app_theme.dart';
 
 // 스타일 옵션 선택 카드
 class StyleOptionCard extends StatelessWidget {
+    final String title;
   final String emoji;
-  final String title;
   final String description;
+  final String details;
   final String? exampleText;
   final bool isSelected;
   final VoidCallback onTap;
 
   const StyleOptionCard({
     super.key,
-    required this.emoji,
     required this.title,
+    required this.emoji,
     required this.description,
+    required this.details,
     this.exampleText,
     required this.isSelected,
     required this.onTap,
@@ -22,79 +24,152 @@ class StyleOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final borderColor = isSelected
+    ? AppTheme.primaryColor
+    : AppTheme.borderColor;
+
+    final exampleBgColor = isSelected
+    ? const Color(0xFFF3F2FF)
+    : const Color(0xFFF8F8FA);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
       onTap: onTap,
-      child: Container(
+      borderRadius: BorderRadius.circular(24),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.infoBg : AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(20),
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-            width: isSelected ? 2 : 1,
+            color: borderColor,
+            width: isSelected ? 2.6 : 1.2,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: AppTheme.shadowColor,
+              blurRadius: 12,
+              offset: Offset(0, 3),
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(emoji, style: const TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: textTheme.titleMedium?.copyWith(
-                      color: isSelected ? AppTheme.primaryColor : AppTheme.textPrimary,
-                      fontWeight: FontWeight.w700,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        emoji,
+                        style: const TextStyle(fontSize: 22),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textPrimary,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontSize: 16,
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          height: 1.45,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    details,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontSize: 16,
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          height: 1.45,
+                        ),
+                  ),
+                  if (isSelected && exampleText != null) ...[
+                    const SizedBox(height: 18),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: exampleBgColor,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        exampleText!,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontSize: 15,
+                              fontStyle: FontStyle.italic,
+                              color: const Color(0xFF6E6E78),
+                              fontWeight: FontWeight.w500,
+                              height: 1.5,
+                            ),
+                      ),
                     ),
-                  ),
-                ),
-                Icon(
-                  isSelected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  color: isSelected ? AppTheme.primaryColor : AppTheme.textHint,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: textTheme.bodyMedium?.copyWith(height: 1.5),
-            ),
-            if (exampleText != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.fillLighter,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  exampleText!,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
+                  ],
+                ],
               ),
-            ],
+            ),
+            const SizedBox(width: 16),
+            _SelectionIndicator(isSelected: isSelected),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SelectionIndicator extends StatelessWidget {
+  final bool isSelected;
+
+  const _SelectionIndicator({
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isSelected
+              ? AppTheme.primaryColor
+              : AppTheme.borderStrongColor,
+          width: 2.6,
+        ),
+      ),
+      child: isSelected
+          ? Center(
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

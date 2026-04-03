@@ -9,6 +9,7 @@ class PhotoDescriptionCard extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final String imagePath;
+  final ValueChanged<String>? onChanged;
 
   const PhotoDescriptionCard({
     super.key,
@@ -16,6 +17,7 @@ class PhotoDescriptionCard extends StatelessWidget {
     required this.controller,
     required this.hintText,
     required this.imagePath,
+    this.onChanged,
   });
 
   @override
@@ -48,6 +50,7 @@ class PhotoDescriptionCard extends StatelessWidget {
           TextField(
             controller: controller,
             maxLines: 2,
+            onChanged: onChanged,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
