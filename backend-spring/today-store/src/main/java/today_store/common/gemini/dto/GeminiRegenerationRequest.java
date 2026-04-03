@@ -1,0 +1,19 @@
+package today_store.common.gemini.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GeminiRegenerationRequest {
+    private String originalText;
+    private List<String> originalHashtags;
+    private String feedback;
+    private String target;
+}

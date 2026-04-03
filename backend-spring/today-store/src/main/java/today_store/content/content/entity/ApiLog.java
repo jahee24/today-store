@@ -2,11 +2,7 @@ package today_store.content.content.entity;
 
 import jakarta.persistence.*;
 import jakarta.persistence.GenerationType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import today_store.content.request.entity.GenerationRequest;
 
@@ -17,9 +13,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "api_logs")
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class ApiLog {
 
@@ -61,4 +56,18 @@ public class ApiLog {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public void completeSuccess(Content content, Integer inputTokens, Integer outputTokens, BigDecimal costUsd, Integer responseTimeMs) {
+        this.status = ApiStatus.SUCCESS;
+        this.content = content;
+        this.inputTokens = inputTokens;
+        this.outputTokens = outputTokens;
+        this.costUsd = costUsd;
+        this.responseTimeMs = responseTimeMs;
+    }
+
+    public void completeError(String errorMessage) {
+        this.status = ApiStatus.ERROR;
+        this.errorMessage = errorMessage;
+    }
 }

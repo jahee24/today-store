@@ -2,11 +2,7 @@ package today_store.content.content.entity;
 
 import jakarta.persistence.*;
 import jakarta.persistence.GenerationType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import today_store.content.request.entity.InputImage;
 
@@ -16,9 +12,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "content_images")
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class ContentImage {
 
@@ -31,9 +26,8 @@ public class ContentImage {
     @JoinColumn(name = "content_id", nullable = false)
     private Content content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "input_image_id", nullable = false)
-    private InputImage inputImage;
+    @Column(name = "input_image_id", nullable = false)
+    private UUID inputImageId;
 
     @Column(nullable = false, length = 500)
     private String url;
