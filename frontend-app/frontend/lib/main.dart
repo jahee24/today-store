@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 
 void main() {
   runApp(const MyApp());
+=======
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'config/routes.dart';
+import 'config/app_theme.dart';
+
+void main() {
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
+>>>>>>> backup/frontend-current-work
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+<<<<<<< HEAD
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -117,6 +131,14 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
+=======
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      routerConfig: router,
+>>>>>>> backup/frontend-current-work
     );
   }
 }
