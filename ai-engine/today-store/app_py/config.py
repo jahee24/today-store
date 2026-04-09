@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-MODEL_NAME = os.getenv("MODEL_NAME", "gemini-3-flash-preview")
+MODEL_NAME = os.getenv("MODEL_NAME", "gemini-3.1-flash-lite-preview")
 MAX_IMAGES = 5
 REQUEST_TIMEOUT_SECONDS = 15
 
