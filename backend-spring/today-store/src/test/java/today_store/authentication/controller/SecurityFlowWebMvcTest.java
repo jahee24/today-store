@@ -89,7 +89,7 @@ class SecurityFlowWebMvcTest {
                 .build());
         String requestBody = objectMapper.writeValueAsString(Map.of(
                 "provider", "google",
-                "code", "oauth-code"
+                "accessToken", "valid-access-token"
         ));
 
         // when
@@ -232,7 +232,7 @@ class SecurityFlowWebMvcTest {
         given(rateLimitService.tryConsume("203.0.113.20", today_store.common.ratelimit.RateLimitTier.HIGH)).willReturn(false);
         String requestBody = objectMapper.writeValueAsString(Map.of(
                 "provider", "google",
-                "code", "oauth-code"
+                "accessToken", "valid-access-token"
         ));
 
         // when
