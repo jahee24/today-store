@@ -23,7 +23,7 @@ import today_store.authentication.entity.User;
 import today_store.authentication.jwt.JwtTokenProvider;
 import today_store.authentication.oauth2.OAuth2UserInfo;
 import today_store.authentication.oauth2.OAuth2UserInfoFactory;
-import today_store.authentication.exception.InvalidOauthCodeException;
+import today_store.authentication.exception.InvalidOauthAccessTokenException;
 import today_store.authentication.exception.InvalidRefreshTokenException;
 import today_store.authentication.exception.UserDisabledException;
 import today_store.authentication.exception.UserNotFoundException;
@@ -61,8 +61,7 @@ public class AuthenticationService {
 
         log.debug("Found client registration for: {}", clientRegistration.getClientName());
 
-        String token = getAccessToken(clientRegistration, loginRequest.getCode());
-        Map<String, Object> userAttributes = getUserAttributes(clientRegistration, token);
+        Map<String, Object> userAttributes = getUserAttributes(clientRegistration, loginRequest.getAccessToken());
         OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(loginRequest.getProvider(), userAttributes);
 
         String maskedEmail = oAuth2UserInfo.getEmail().replaceAll("(?<=.{3}).(?=.*@)", "*");
@@ -196,44 +195,6 @@ public class AuthenticationService {
         log.info("User account successfully deactivated (soft delete). User ID: {}", userId);
     }
 
-    private String getAccessToken(ClientRegistration clientRegistration, String code) {
-        log.debug("Requesting access token from provider endpoint: {}", clientRegistration.getProviderDetails().getTokenUri());
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "authorization_code");
-        formData.add("client_id", clientRegistration.getClientId());
-        formData.add("client_secret", clientRegistration.getClientSecret());
-        formData.add("redirect_uri", clientRegistration.getRedirectUri());
-        formData.add("code", code);
-
-        try {
-            Map<String, Object> response = webClient.post()
-                    .uri(clientRegistration.getProviderDetails().getTokenUri())
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .bodyValue(formData)
-                    .retrieve()
-                    .onStatus(org.springframework.http.HttpStatusCode::is4xxClientError, clientResponse -> {
-                        log.error("Client error while getting access token: {}", clientResponse.statusCode());
-                        return clientResponse.bodyToMono(String.class)
-                                .map(body -> new InvalidOauthCodeException());
-                    })
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                    .block();
-
-            String accessToken = (String) Optional.ofNullable(response)
-                    .map(r -> r.get("access_token"))
-                    .orElseThrow(() -> {
-                        log.error("Access token not found in provider response");
-                        return new InvalidOauthCodeException();
-                    });
-            log.debug("Access token received successfully.");
-            return accessToken;
-        } catch (Exception e) {
-            log.error("Error communicating with OAuth provider: ", e);
-            if (e instanceof InvalidOauthCodeException) throw (InvalidOauthCodeException) e;
-            throw new InvalidOauthCodeException();
-        }
-    }
-
     private Map<String, Object> getUserAttributes(ClientRegistration clientRegistration, String token) {
         log.info("Requesting user attributes from {}", clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri());
         try {
@@ -244,22 +205,22 @@ public class AuthenticationService {
                     .onStatus(org.springframework.http.HttpStatusCode::isError, clientResponse -> {
                         log.error("Error while getting user attributes: {}", clientResponse.statusCode());
                         return clientResponse.bodyToMono(String.class)
-                                .map(body -> new InvalidOauthCodeException());
+                                .map(body -> new InvalidOauthAccessTokenException());
                     })
                     .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                     .block();
 
             if (userAttributes == null) {
                 log.error("User attributes response is null");
-                throw new InvalidOauthCodeException();
+                throw new InvalidOauthAccessTokenException();
             }
 
             log.debug("User attributes received successfully.");
             return userAttributes;
         } catch (Exception e) {
             log.error("Error getting user attributes: ", e);
-            if (e instanceof InvalidOauthCodeException) throw (InvalidOauthCodeException) e;
-            throw new InvalidOauthCodeException();
+            if (e instanceof InvalidOauthAccessTokenException) throw (InvalidOauthAccessTokenException) e;
+            throw new InvalidOauthAccessTokenException();
         }
     }
 
