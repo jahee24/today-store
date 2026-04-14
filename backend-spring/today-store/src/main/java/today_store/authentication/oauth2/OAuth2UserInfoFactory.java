@@ -8,6 +8,8 @@ public class OAuth2UserInfoFactory {
             return new GoogleOAuth2UserInfo(attributes);
         } else if (registrationId.equalsIgnoreCase("kakao")) {
             return new KakaoOAuth2UserInfo(attributes);
+        } else if (registrationId.equalsIgnoreCase("instagram")) {
+            return new InstagramOAuth2UserInfo(attributes);
         } else {
             throw new IllegalArgumentException("Invalid Provider Type.");
         }

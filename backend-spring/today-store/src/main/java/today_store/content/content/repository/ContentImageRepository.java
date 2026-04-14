@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface ContentImageRepository extends JpaRepository<ContentImage, UUID> {
     List<ContentImage> findByContentOrderByCreatedAtAsc(Content content);
+    List<ContentImage> findByContentId(UUID uuid);
 }

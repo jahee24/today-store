@@ -1,12 +1,14 @@
 package today_store.user.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import today_store.authentication.entity.User;
+import today_store.common.config.TokenConverter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,8 +16,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "user_social_accounts")
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserSocialAccount {
 
     @Id
@@ -36,6 +37,7 @@ public class UserSocialAccount {
     @Column(name = "username", length = 100)
     private String username;
 
+    @Convert(converter = TokenConverter.class)
     @Column(name = "access_token", nullable = false, columnDefinition = "TEXT")
     private String accessToken;
 

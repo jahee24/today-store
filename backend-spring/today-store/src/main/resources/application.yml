@@ -85,3 +85,10 @@ app:
     api-key: ${GEMINI_API_KEY}
     model: "gemini-3-flash-preview"
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
+
+instagram:
+  app-id: ${INSTAGRAM_APP_ID:dummy-id}
+  app-secret: ${INSTAGRAM_APP_SECRET:dummy-secret}
+
+encryption:
+  secret-key: ${ENCRYPTION_SECRET_KEY:abcdefghijklmnopqrstuvwxyz123456}
