@@ -47,7 +47,8 @@ public enum ErrorCode {
 
     // AI / Gemini
     AI_RESPONSE_EMPTY(HttpStatus.INTERNAL_SERVER_ERROR, "AI001", "Gemini returned empty response"),
-    AI_PARSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI002", "Failed to parse AI response");
+    AI_PARSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI002", "Failed to parse AI response"),
+    AI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "AI003", "AI generation request failed. Please try again later.");
 
     private final HttpStatus status;
     private final String code;
