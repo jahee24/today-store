@@ -85,7 +85,7 @@ class AuthControllerWebMvcTest {
         given(authenticationService.oauthLogin(any(LoginRequest.class))).willReturn(response);
         String requestBody = objectMapper.writeValueAsString(Map.of(
                 "provider", "google",
-                "code", "oauth-code"
+                "accessToken", "valid-access-token"
         ));
 
         // when
@@ -193,7 +193,7 @@ class AuthControllerWebMvcTest {
         // given
         String requestBody = objectMapper.writeValueAsString(Map.of(
                 "provider", "",
-                "code", "oauth-code"
+                "accessToken", "valid-access-token"
         ));
 
         // when
@@ -212,14 +212,14 @@ class AuthControllerWebMvcTest {
     }
 
     @Test
-    @DisplayName("code 누락 시 검증 오류 반환")
-    void shouldReturnBadRequestWhenCodeIsBlank() throws Exception {
-        // code가 비어 있으면 공통 validation 에러 응답으로 400을 반환해야 한다.
+    @DisplayName("accessToken 누락 시 검증 오류 반환")
+    void shouldReturnBadRequestWhenAccessTokenIsBlank() throws Exception {
+        // accessToken이 비어 있으면 공통 validation 에러 응답으로 400을 반환해야 한다.
 
         // given
         String requestBody = objectMapper.writeValueAsString(Map.of(
                 "provider", "google",
-                "code", ""
+                "accessToken", ""
         ));
 
         // when
@@ -233,8 +233,8 @@ class AuthControllerWebMvcTest {
         assertThat(result.getResponse().getStatus()).isEqualTo(400);
         assertThat(body.get("code").asText()).isEqualTo("A001");
         assertThat(body.get("errors").size()).isEqualTo(1);
-        assertThat(body.get("errors").get(0).get("field").asText()).isEqualTo("code");
-        assertThat(body.get("errors").get(0).get("reason").asText()).isEqualTo("인가 코드(code)는 필수 항목입니다.");
+        assertThat(body.get("errors").get(0).get("field").asText()).isEqualTo("accessToken");
+        assertThat(body.get("errors").get(0).get("reason").asText()).isEqualTo("액세스 토큰(accessToken)은 필수 항목입니다.");
     }
 
     @Test
