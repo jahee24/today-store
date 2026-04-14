@@ -16,7 +16,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "user_social_accounts")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Setter
+@NoArgsConstructor
 public class UserSocialAccount {
 
     @Id
