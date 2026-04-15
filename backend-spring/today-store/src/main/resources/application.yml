@@ -83,12 +83,12 @@ app:
     signed-url-duration-minutes: ${SIGNED_URL_DURATION_MINUTES:15}
   gemini:
     api-key: ${GEMINI_API_KEY}
-    model: "gemini-3-flash-preview"
+    model: "gemini-3-flash-lite-preview"
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
 
 instagram:
-  app-id: ${INSTAGRAM_APP_ID:dummy-id}
-  app-secret: ${INSTAGRAM_APP_SECRET:dummy-secret}
+  app-id: ${INSTAGRAM_APP_ID}
+  app-secret: ${INSTAGRAM_APP_SECRET}
 
 encryption:
-  secret-key: ${ENCRYPTION_SECRET_KEY:abcdefghijklmnopqrstuvwxyz123456}
+  secret-key: ${ENCRYPTION_SECRET_KEY}
