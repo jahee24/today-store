@@ -10,6 +10,7 @@ public enum ErrorCode {
     // Auth
     MISSING_REQUIRED_FIELDS(HttpStatus.BAD_REQUEST, "A001", "Missing required fields."),
     UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "A002", "Unsupported oauth provider."),
+    INVALID_OAUTH_TOKEN(HttpStatus.UNAUTHORIZED, "A003", "Invalid oauth access token."),
     INVALID_OAUTH_CODE(HttpStatus.UNAUTHORIZED, "A003", "Invalid oauth code."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A004", "Invalid or expired refresh token."),
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "A005", "Full authentication is required."),

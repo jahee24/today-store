@@ -41,7 +41,7 @@ import today_store.authentication.dto.RefreshTokenResponse;
 import today_store.authentication.entity.BlacklistedToken;
 import today_store.authentication.entity.RefreshToken;
 import today_store.authentication.entity.User;
-import today_store.authentication.exception.InvalidOauthCodeException;
+import today_store.authentication.exception.InvalidOauthAccessTokenException;
 import today_store.authentication.exception.InvalidRefreshTokenException;
 import today_store.authentication.exception.UnsupportedProviderException;
 import today_store.authentication.exception.UserDisabledException;
@@ -86,15 +86,12 @@ class AuthenticationServiceTest {
         // given
         authenticationService = createService(createWebClient(
                 jsonResponse(HttpStatus.OK, """
-                        {"access_token":"provider-access-token"}
-                        """),
-                jsonResponse(HttpStatus.OK, """
                         {"sub":"provider-id","name":"새 사용자","email":"newuser@example.com","picture":"https://image.test/profile.png"}
                         """)
         ));
         ClientRegistration clientRegistration = createGoogleClientRegistration();
         UUID savedUserId = UUID.randomUUID();
-        LoginRequest loginRequest = new LoginRequest("google", "oauth-code");
+        LoginRequest loginRequest = new LoginRequest("google", "valid-access-token");
 
         given(clientRegistrationRepository.findByRegistrationId("google")).willReturn(clientRegistration);
         given(userRepository.findByProviderAndProviderId("google", "provider-id")).willReturn(Optional.empty());
@@ -136,15 +133,12 @@ class AuthenticationServiceTest {
         // given
         authenticationService = createService(createWebClient(
                 jsonResponse(HttpStatus.OK, """
-                        {"access_token":"provider-access-token"}
-                        """),
-                jsonResponse(HttpStatus.OK, """
                         {"sub":"provider-id","name":"기존 사용자","email":"existing@example.com","picture":"https://image.test/profile.png"}
                         """)
         ));
         ClientRegistration clientRegistration = createGoogleClientRegistration();
         User existingUser = createUser("existing@example.com", "provider-id", true);
-        LoginRequest loginRequest = new LoginRequest("google", "oauth-code");
+        LoginRequest loginRequest = new LoginRequest("google", "valid-access-token");
 
         given(clientRegistrationRepository.findByRegistrationId("google")).willReturn(clientRegistration);
         given(userRepository.findByProviderAndProviderId("google", "provider-id")).willReturn(Optional.of(existingUser));
@@ -173,7 +167,7 @@ class AuthenticationServiceTest {
         // 등록되지 않은 OAuth 제공자로 로그인하면 지원하지 않는 제공자 예외를 반환해야 한다.
 
         // given
-        LoginRequest loginRequest = new LoginRequest("naver", "oauth-code");
+        LoginRequest loginRequest = new LoginRequest("naver", "valid-access-token");
         given(clientRegistrationRepository.findByRegistrationId("naver")).willReturn(null);
 
         // when
@@ -189,57 +183,28 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    @DisplayName("OAuth 토큰 발급 실패 예외 처리")
-    void shouldThrowInvalidOauthCodeExceptionWhenTokenExchangeFails() {
-        // OAuth 제공자에서 토큰 발급이 실패하면 인가 코드 오류 예외를 반환해야 한다.
-
-        // given
-        authenticationService = createService(createWebClient(
-                jsonResponse(HttpStatus.BAD_REQUEST, """
-                        {"error":"invalid_grant"}
-                        """)
-        ));
-        LoginRequest loginRequest = new LoginRequest("google", "invalid-code");
-        given(clientRegistrationRepository.findByRegistrationId("google")).willReturn(createGoogleClientRegistration());
-
-        // when
-        InvalidOauthCodeException exception = assertThrows(
-                InvalidOauthCodeException.class,
-                () -> authenticationService.oauthLogin(loginRequest)
-        );
-
-        // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_OAUTH_CODE);
-        assertThat(exception.getMessage()).isEqualTo(ErrorCode.INVALID_OAUTH_CODE.getMessage());
-        then(userRepository).should(never()).findByProviderAndProviderId(anyString(), anyString());
-    }
-
-    @Test
     @DisplayName("OAuth 사용자 정보 조회 실패 예외 처리")
-    void shouldThrowInvalidOauthCodeExceptionWhenUserInfoLookupFails() {
-        // OAuth 토큰은 발급되었지만 사용자 정보 조회가 실패하면 인가 코드 오류 예외를 반환해야 한다.
+    void shouldThrowInvalidOauthAccessTokenExceptionWhenUserInfoLookupFails() {
+        // OAuth 토큰으로 사용자 정보 조회가 실패하면 액세스 토큰 오류 예외를 반환해야 한다.
 
         // given
         authenticationService = createService(createWebClient(
-                jsonResponse(HttpStatus.OK, """
-                        {"access_token":"provider-access-token"}
-                        """),
                 jsonResponse(HttpStatus.INTERNAL_SERVER_ERROR, """
                         {"error":"provider_error"}
                         """)
         ));
-        LoginRequest loginRequest = new LoginRequest("google", "oauth-code");
+        LoginRequest loginRequest = new LoginRequest("google", "invalid-access-token");
         given(clientRegistrationRepository.findByRegistrationId("google")).willReturn(createGoogleClientRegistration());
 
         // when
-        InvalidOauthCodeException exception = assertThrows(
-                InvalidOauthCodeException.class,
+        InvalidOauthAccessTokenException exception = assertThrows(
+                InvalidOauthAccessTokenException.class,
                 () -> authenticationService.oauthLogin(loginRequest)
         );
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_OAUTH_CODE);
-        assertThat(exception.getMessage()).isEqualTo(ErrorCode.INVALID_OAUTH_CODE.getMessage());
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_OAUTH_TOKEN);
+        assertThat(exception.getMessage()).isEqualTo(ErrorCode.INVALID_OAUTH_TOKEN.getMessage());
         then(userRepository).should(never()).findByProviderAndProviderId(anyString(), anyString());
     }
 
@@ -251,14 +216,11 @@ class AuthenticationServiceTest {
         // given
         authenticationService = createService(createWebClient(
                 jsonResponse(HttpStatus.OK, """
-                        {"access_token":"provider-access-token"}
-                        """),
-                jsonResponse(HttpStatus.OK, """
                         {"sub":"provider-id","name":"비활성 사용자","email":"inactive@example.com","picture":"https://image.test/profile.png"}
                         """)
         ));
         User inactiveUser = createUser("inactive@example.com", "provider-id", false);
-        LoginRequest loginRequest = new LoginRequest("google", "oauth-code");
+        LoginRequest loginRequest = new LoginRequest("google", "valid-access-token");
 
         given(clientRegistrationRepository.findByRegistrationId("google")).willReturn(createGoogleClientRegistration());
         given(userRepository.findByProviderAndProviderId("google", "provider-id")).willReturn(Optional.of(inactiveUser));

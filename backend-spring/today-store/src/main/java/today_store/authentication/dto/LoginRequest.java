@@ -12,6 +12,6 @@ public class LoginRequest {
     @NotBlank(message = "소셜 로그인 제공자(provider)는 필수 항목입니다.")
     private String provider;
     
-    @NotBlank(message = "인가 코드(code)는 필수 항목입니다.")
-    private String code;
+    @NotBlank(message = "액세스 토큰(accessToken)은 필수 항목입니다.")
+    private String accessToken;
 }
