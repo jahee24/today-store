@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import today_store.authentication.entity.User;
 import today_store.common.exception.CustomException;
 import today_store.common.exception.ErrorCode;
+import today_store.common.gcs.GcsService;
 import today_store.common.instagram.client.InstagramClient;
 import today_store.common.instagram.dto.InstagramAuthRequest;
 import today_store.common.instagram.dto.InstagramAuthResponse;
@@ -39,6 +40,7 @@ public class InstagramService {
     private final ContentRepository contentRepository;
     private final ContentImageRepository contentImageRepository;
     private final PublishPostService publishPostService;
+    private final GcsService gcsService;
 
     private static final String PLATFORM_NAME = "INSTAGRAM";
 
@@ -106,23 +108,27 @@ public class InstagramService {
             String creationId;
             if (images.size() == 1) {
                 // Single Image Post
+                String imageUrl = gcsService.generateSignedUrl(images.get(0).getUrl());
                 creationId = instagramClient.createMediaContainer(
                         socialAccount.getSocialUserId(),
                         socialAccount.getAccessToken(),
-                        images.get(0).getUrl(),
+                        imageUrl,
                         caption,
                         false
                 );
             } else {
                 // Carousel Post
                 List<String> itemContainerIds = images.stream()
-                        .map(image -> instagramClient.createMediaContainer(
-                                socialAccount.getSocialUserId(),
-                                socialAccount.getAccessToken(),
-                                image.getUrl(),
-                                null, 
-                                true
-                        ))
+                        .map(image -> {
+                            String imageUrl = gcsService.generateSignedUrl(image.getUrl());
+                            return instagramClient.createMediaContainer(
+                                    socialAccount.getSocialUserId(),
+                                    socialAccount.getAccessToken(),
+                                    imageUrl,
+                                    null,
+                                    true
+                            );
+                        })
                         .toList();
 
                 creationId = instagramClient.createCarouselContainer(
@@ -139,8 +145,13 @@ public class InstagramService {
             // 5. Get Media Info
             Map<String, Object> mediaInfo = instagramClient.getMediaInfo(mediaId, socialAccount.getAccessToken());
             String permalink = (String) mediaInfo.get("permalink");
-            String timestampStr = (String) mediaInfo.get("timestamp"); 
-            LocalDateTime publishedAt = LocalDateTime.parse(timestampStr, DateTimeFormatter.ISO_DATE_TIME);
+            String timestampStr = (String) mediaInfo.get("timestamp");
+
+            // Handle Instagram timestamp format (e.g., 2026-04-13T06:27:42+0000)
+            LocalDateTime publishedAt = java.time.OffsetDateTime.parse(
+                    timestampStr,
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
+            ).toLocalDateTime();
 
             // 6. Complete ContentPost (Transaction propagation: REQUIRES_NEW)
             publishPostService.completePost(post.getId(), mediaId, permalink, publishedAt);
@@ -154,8 +165,8 @@ public class InstagramService {
                     .build();
 
         } catch (Exception e) {
-            log.error("Failed to publish to Instagram for content: {}", content.getId(), e);
-            // Fail ContentPost
+            log.error("Failed to publish to Instagram for content: {}. Error: {}", content.getId(), e.getMessage());
+            // Fail ContentPost (Transaction propagation: REQUIRES_NEW)
             publishPostService.failPost(post.getId());
             throw e;
         }

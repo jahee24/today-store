@@ -10,4 +10,9 @@ public class CustomException extends RuntimeException {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
+
+    public CustomException(ErrorCode errorCode, String dynamicMessage) {
+        super(String.format(errorCode.getMessage(), dynamicMessage));
+        this.errorCode = errorCode;
+    }
 }
