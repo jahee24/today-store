@@ -16,19 +16,22 @@ public class DeepLinkGenerator {
 
     public String generateDeeplink(Content content, ContentPlatform platform) {
         String text = switch (platform) {
-            case INSTAGRAM -> content.getInstagramText();
             case NAVER -> content.getNaverText();
             case NAVER_PLACE -> content.getNaverText();
             case KARROT -> content.getKarrotText();
+            default -> "";
         };
 
         String encodedText = URLEncoder.encode(text != null ? text : "", StandardCharsets.UTF_8);
 
         return switch (platform) {
-            case KARROT -> "daangn://post?text=" + encodedText;
+            case KARROT -> "daangn://articles/new=" + encodedText;
             case NAVER_PLACE -> "naverplace://write?content=" + encodedText;
-            case NAVER -> "naverblog://write?text=" + encodedText;
-            case INSTAGRAM -> "instagram://library?Caption=" + encodedText;
+            case NAVER -> {
+                String title = (content.getGenerationRequest() != null) ? content.getGenerationRequest().getConcept() : "";
+                String encodedTitle = URLEncoder.encode(title != null ? title : "", StandardCharsets.UTF_8);
+                yield String.format("naverblog:smart_editor?native=true&postTitle=%s&smartEditorContent=%s", encodedTitle, encodedText);
+            }
             default -> "";
         };
     }
@@ -38,7 +41,6 @@ public class DeepLinkGenerator {
             case KARROT -> "https://www.daangn.com/";
             case NAVER_PLACE -> "https://m.place.naver.com/";
             case NAVER -> "https://section.blog.naver.com/";
-            case INSTAGRAM -> "https://www.instagram.com/";
             default -> "";
         };
     }
