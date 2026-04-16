@@ -16,8 +16,8 @@ class LoginScreen extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final size = MediaQuery.of(context).size;
     final authState = ref.watch(authProvider);
-
-    ref.listen<AuthState>(authProvider, (_, next) {
+    
+    ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
         if (next.isFirstLogin) {
           context.go('/profile-setup');
@@ -27,10 +27,10 @@ class LoginScreen extends ConsumerWidget {
       }
 
       if (next.status == AuthStatus.unauthenticated &&
-          next.errorMessage != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+          next.errorMessage != null && next.errorMessage!.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage!)),
+        );
       }
     });
 

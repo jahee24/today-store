@@ -1,10 +1,16 @@
 import 'package:dio/dio.dart';
 import '../../models/auth_response_model.dart';
+import '../../models/user_model.dart';
 
 class AuthApi {
   final Dio dio;
 
   AuthApi(this.dio);
+
+  Future<UserModel> getMe() async {
+    final response = await dio.get('/api/v1/users/me');
+    return UserModel.fromJson(response.data as Map<String, dynamic>);
+  }
 
   Future<AuthResponseModel> oauthLogin({
     required String provider,
@@ -14,11 +20,11 @@ class AuthApi {
       '/api/v1/auth/oauth/login',
       data: {
         'provider': provider,
-        'accessToken': accessToken,
+        'accessToken': accessToken, 
       },
     );
 
-    return AuthResponseModel.fromJson(response.data);
+    return AuthResponseModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<AuthResponseModel> refresh({

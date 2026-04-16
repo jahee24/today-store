@@ -14,6 +14,9 @@ dependencies:
   google_sign_in: ^6.2.1
   kakao_flutter_sdk_user: ^1.9.5
 
+  app_links: ^6.3.3
+  url_launcher: ^6.3.0
+
   # 상태 관리
   flutter_riverpod: ^2.5.1
 

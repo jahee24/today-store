@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
+import 'config/kakao_auth_config.dart';
 import 'config/routes.dart';
 import 'config/app_theme.dart';
 Future<void> main() async {
@@ -12,6 +13,8 @@ Future<void> main() async {
   KakaoSdk.init(
     nativeAppKey: 'bc46d69e741705ca1430b64afe7d93be',
   );
+
+  print('KEY HASH: ${await KakaoSdk.origin}');
 
   await FlutterNaverMap().init(
     clientId: '7zwkzmxezo',

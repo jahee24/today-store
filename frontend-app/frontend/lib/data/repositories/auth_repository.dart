@@ -1,5 +1,6 @@
 import '../datasources/remote/auth_api.dart';
 import '../models/auth_response_model.dart';
+import '../models/user_model.dart';
 import '../../services/token_service.dart';
 
 class AuthRepository {
@@ -11,13 +12,17 @@ class AuthRepository {
     required this.tokenService,
   });
 
+  Future<UserModel> getMe() async {
+    return authApi.getMe();
+  }
+
   Future<AuthResponseModel> oauthLogin({
     required String provider,
     required String accessToken,
   }) async {
     final result = await authApi.oauthLogin(
       provider: provider, 
-      accessToken: accessToken
+      accessToken: accessToken,
     );
 
     await tokenService.saveTokens(

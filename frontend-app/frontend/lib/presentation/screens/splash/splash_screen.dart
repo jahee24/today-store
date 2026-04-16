@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../config/app_theme.dart';
-import 'splash_provider.dart';
+import '../../../data/providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -16,6 +17,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _fadeAnim;
   late final Animation<double> _scaleAnim;
+  bool _initialized = false;
 
   @override
   void initState() {
@@ -34,6 +36,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
 
     _animController.forward();
+
+    Future.microtask(() async {
+      if (_initialized) return;
+      _initialized = true;
+      await ref.read(authProvider.notifier).initialize();
+    });
   }
 
   @override
@@ -42,27 +50,29 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.dispose();
   }
 
-  // Async 상태에 따라 라우팅
-  void _handleStatus(SplashStatus status) {
+  void _routeByAuthState(AuthState state) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      switch (status) {
-        case SplashStatus.authenticated:
+      
+      if (state.status == AuthStatus.unauthenticated) {
+        context.go('/login');
+        return;
+      }
+
+      if (state.status == AuthStatus.authenticated) {
+        if (state.isFirstLogin) {
+          context.go('/profile-setup');
+        } else {
           context.go('/dashboard');
-          break;
-        case SplashStatus.unauthenticated:
-          context.go('/login');
-          break;
-        case SplashStatus.loading:
-          break;
+        }
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<SplashStatus>> (splashProvider, (_, next) {
-      next.whenData(_handleStatus);
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      _routeByAuthState(next);
     });
 
     final size = MediaQuery.of(context).size;
