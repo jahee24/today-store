@@ -19,7 +19,6 @@ public class ValidationErrorResolver {
         errorMapping.put("regenerateContentRequest", ErrorCode.INVALID_REGENERATION_REQUEST);
         errorMapping.put("startManualPublishRequest", ErrorCode.MISSING_REQUIRED_FIELDS);
         errorMapping.put("completeManualPublishRequest", ErrorCode.MISSING_REQUIRED_FIELDS);
-        errorMapping.put("deeplinkPublishRequest", ErrorCode.MISSING_REQUIRED_FIELDS);
     }
 
     public ErrorCode resolve(String objectName) {
