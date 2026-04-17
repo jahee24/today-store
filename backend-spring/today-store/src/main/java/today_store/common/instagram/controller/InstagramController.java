@@ -14,6 +14,8 @@ import today_store.common.instagram.dto.InstagramAuthResponse;
 import today_store.common.instagram.dto.InstagramPublishRequest;
 import today_store.common.instagram.dto.InstagramPublishResponse;
 import today_store.common.instagram.service.InstagramService;
+import today_store.common.ratelimit.RateLimit;
+import today_store.common.ratelimit.RateLimitTier;
 import today_store.user.service.UserService;
 
 @RestController
@@ -25,6 +27,7 @@ public class InstagramController {
     private final UserService userService;
 
     @PostMapping("/auth")
+    @RateLimit(tier = RateLimitTier.HIGH)
     public ApiResponse<InstagramAuthResponse> authenticate(
             @Valid @RequestBody InstagramAuthRequest request,
             Authentication authentication) {
@@ -34,6 +37,7 @@ public class InstagramController {
     }
 
     @PostMapping("/publish")
+    @RateLimit(tier = RateLimitTier.HIGH)
     public InstagramPublishResponse publish(
             @Valid @RequestBody InstagramPublishRequest request,
             Authentication authentication) {

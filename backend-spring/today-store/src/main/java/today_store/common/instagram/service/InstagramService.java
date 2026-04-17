@@ -59,7 +59,7 @@ public class InstagramService {
         String instagramUserId = userInfo.get("id");
         String username = userInfo.get("username");
 
-        // 4. Link account (This part is DB-heavy and is handled within a separate transaction)
+        // 4. Link account
         userSocialAccountService.linkAccount(user, PLATFORM_NAME, instagramUserId, username, longLivedToken, expiresAt);
 
         return InstagramAuthResponse.builder()
@@ -101,7 +101,7 @@ public class InstagramService {
             caption += "\n\n" + String.join(" ", content.getInstagramHashtags());
         }
 
-        // Create In-Progress post (Transaction propagation: REQUIRES_NEW)
+        // Create In-Progress post
         ContentPost post = publishPostService.createInProgressPost(content, ContentPlatform.INSTAGRAM);
 
         try {
@@ -147,13 +147,12 @@ public class InstagramService {
             String permalink = (String) mediaInfo.get("permalink");
             String timestampStr = (String) mediaInfo.get("timestamp");
 
-            // Handle Instagram timestamp format (e.g., 2026-04-13T06:27:42+0000)
+            // Handle Instagram timestamp format
             LocalDateTime publishedAt = java.time.OffsetDateTime.parse(
                     timestampStr,
                     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
             ).toLocalDateTime();
 
-            // 6. Complete ContentPost (Transaction propagation: REQUIRES_NEW)
             publishPostService.completePost(post.getId(), mediaId, permalink, publishedAt);
 
             return InstagramPublishResponse.builder()
@@ -165,8 +164,7 @@ public class InstagramService {
                     .build();
 
         } catch (Exception e) {
-            log.error("Failed to publish to Instagram for content: {}. Error: {}", content.getId(), e.getMessage());
-            // Fail ContentPost (Transaction propagation: REQUIRES_NEW)
+            log.error("Failed to publish to Instagram for content: {}", content.getId());
             publishPostService.failPost(post.getId());
             throw e;
         }

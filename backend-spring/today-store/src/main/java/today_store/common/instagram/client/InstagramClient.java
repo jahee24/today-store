@@ -47,7 +47,11 @@ public class InstagramClient {
         formData.add("code", authCode);
 
         return webClient.post()
-                .uri(AUTH_BASE_URL + "/oauth/access_token")
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("api.instagram.com")
+                        .path("/oauth/access_token")
+                        .build())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
@@ -59,15 +63,17 @@ public class InstagramClient {
 
     // Short-lived token -> Long-lived token
     public Map<String, Object> getLongLivedToken(String shortLivedToken) {
-        String uri = String.format("https://graph.instagram.com/access_token" +
-                        "?grant_type=ig_exchange_token" +
-                        "&client_secret=%s" +
-                        "&access_token=%s",
-                appSecret, shortLivedToken);
-
         return webClient.get()
-                .uri(uri)
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("graph.instagram.com")
+                        .path("/access_token")
+                        .queryParam("grant_type", "ig_exchange_token")
+                        .queryParam("client_secret", "{client_secret}")
+                        .queryParam("access_token", "{access_token}")
+                        .build(appSecret, shortLivedToken))
                 .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, this::handleInstagramError)
                 .bodyToMono(Map.class)
                 .map(res -> (Map<String, Object>) res)
                 .block();
@@ -75,10 +81,13 @@ public class InstagramClient {
 
     // Get Instagram User Info
     public Map<String, String> getUserInfo(String accessToken) {
-        String uri = "https://graph.instagram.com/v25.0/me?fields=user_id,username";
-
         return webClient.get()
-                .uri(uri)
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("graph.instagram.com")
+                        .path("/v25.0/me")
+                        .queryParam("fields", "user_id,username")
+                        .build())
                 .headers(h -> h.setBearerAuth(accessToken))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, this::handleInstagramError)
@@ -89,7 +98,7 @@ public class InstagramClient {
                     String username = (String) res.get("username");
 
                     if (id == null || username == null) {
-                        log.error("Missing required fields in Instagram response: {}", res);
+                        log.error("Missing required fields in Instagram user info response");
                         throw new CustomException(ErrorCode.INSTAGRAM_INVALID_AUTH_CODE);
                     }
 
@@ -100,8 +109,6 @@ public class InstagramClient {
 
     // Create Media Container
     public String createMediaContainer(String instagramUserId, String accessToken, String imageUrl, String caption, boolean isCarouselItem) {
-        String uri = String.format("https://graph.instagram.com/v25.0/%s/media", instagramUserId);
-
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("image_url", imageUrl);
         if (caption != null && !caption.isBlank()) {
@@ -112,7 +119,11 @@ public class InstagramClient {
         }
 
         return webClient.post()
-                .uri(uri)
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("graph.instagram.com")
+                        .path("/v25.0/{instagramUserId}/media")
+                        .build(instagramUserId))
                 .headers(h -> h.setBearerAuth(accessToken))
                 .bodyValue(body)
                 .retrieve()
@@ -128,8 +139,6 @@ public class InstagramClient {
 
     // Create Carousel Container
     public String createCarouselContainer(String instagramUserId, String accessToken, List<String> children, String caption) {
-        String uri = String.format("https://graph.instagram.com/v25.0/%s/media", instagramUserId);
-
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("media_type", "CAROUSEL");
         body.put("children", String.join(",", children));
@@ -138,7 +147,11 @@ public class InstagramClient {
         }
 
         return webClient.post()
-                .uri(uri)
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("graph.instagram.com")
+                        .path("/v25.0/{instagramUserId}/media")
+                        .build(instagramUserId))
                 .headers(h -> h.setBearerAuth(accessToken))
                 .bodyValue(body)
                 .retrieve()
@@ -154,13 +167,15 @@ public class InstagramClient {
 
     // Publish Media
     public String publishMedia(String instagramUserId, String accessToken, String creationId) {
-        String uri = String.format("https://graph.instagram.com/v25.0/%s/media_publish", instagramUserId);
-
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("creation_id", creationId);
 
         return webClient.post()
-                .uri(uri)
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("graph.instagram.com")
+                        .path("/v25.0/{instagramUserId}/media_publish")
+                        .build(instagramUserId))
                 .headers(h -> h.setBearerAuth(accessToken))
                 .bodyValue(body)
                 .retrieve()
@@ -179,16 +194,19 @@ public class InstagramClient {
 
     // Get Media Info (permalink, timestamp)
     public Map<String, Object> getMediaInfo(String mediaId, String accessToken) {
-        String uri = String.format("https://graph.instagram.com/v25.0/%s?fields=permalink,timestamp", mediaId);
-
         return webClient.get()
-                .uri(uri)
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("graph.instagram.com")
+                        .path("/v25.0/{mediaId}")
+                        .queryParam("fields", "permalink,timestamp")
+                        .build(mediaId))
                 .headers(h -> h.setBearerAuth(accessToken))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, this::handleInstagramError)
                 .bodyToMono(Map.class)
                 .map(res -> {
-                    log.info("Successfully retrieved Instagram media info: {}", res);
+                    log.info("Successfully retrieved Instagram media info for ID: {}", mediaId);
                     return (Map<String, Object>) res;
                 })
                 .block();
@@ -196,9 +214,9 @@ public class InstagramClient {
 
     private Mono<? extends Throwable> handleInstagramError(ClientResponse response) {
         return response.bodyToMono(Map.class).flatMap(body -> {
-            log.error("Instagram API Error. Status: {}, Body: {}", response.statusCode(), body);
-
             Map<String, Object> errorMap = (Map<String, Object>) body.get("error");
+            log.error("Instagram API Error. Status: {}, Details: {}", response.statusCode(), errorMap);
+
             if (errorMap == null) {
                 return Mono.error(new CustomException(ErrorCode.INSTAGRAM_API_ERROR, "Unknown error"));
             }

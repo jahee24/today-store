@@ -21,7 +21,7 @@ public class PublishController {
     private final UserService userService;
 
     @PostMapping("/manual/start")
-    @RateLimit(tier = RateLimitTier.LOW)
+    @RateLimit(tier = RateLimitTier.MIDDLE)
     @ResponseStatus(HttpStatus.CREATED)
     public StartManualPublishResponse startManualPublish(
             @Valid @RequestBody StartManualPublishRequest request,
@@ -32,7 +32,7 @@ public class PublishController {
     }
 
     @PatchMapping("/complete")
-    @RateLimit(tier = RateLimitTier.LOW)
+    @RateLimit(tier = RateLimitTier.MIDDLE)
     public CompleteManualPublishResponse completeManualPublish(
             @Valid @RequestBody CompleteManualPublishRequest request,
             Authentication authentication) {
