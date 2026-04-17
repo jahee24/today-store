@@ -64,7 +64,11 @@ public class AuthenticationService {
         Map<String, Object> userAttributes = getUserAttributes(clientRegistration, loginRequest.getAccessToken());
         OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(loginRequest.getProvider(), userAttributes);
 
-        String maskedEmail = oAuth2UserInfo.getEmail().replaceAll("(?<=.{3}).(?=.*@)", "*");
+        String rawEmail = oAuth2UserInfo.getEmail();
+        String maskedEmail = (rawEmail != null)
+                ? rawEmail.replaceAll("(?<=.{3}).(?=.*@)", "*")
+                : "NO_EMAIL";
+
         log.debug("OAuth2 User authenticated. Email: {}, Provider: {}", maskedEmail, loginRequest.getProvider());
 
         boolean isNewUser = userRepository.findByProviderAndProviderId(loginRequest.getProvider(), oAuth2UserInfo.getId()).isEmpty();
@@ -255,10 +259,6 @@ public class AuthenticationService {
                     );
                 });
 
-        user.recordLogin();
-
         return userRepository.save(user);
     }
-
-
 }
