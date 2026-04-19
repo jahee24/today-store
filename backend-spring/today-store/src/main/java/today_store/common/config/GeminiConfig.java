@@ -46,7 +46,7 @@ public class GeminiConfig {
     }
 
     public String getGenerateUrl() {
-        return String.format("%s/%s:generateContent?key=%s", endpoint, model, apiKey);
+        return String.format("%s/%s:generateContent", endpoint, model);
     }
 
 }

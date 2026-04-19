@@ -16,6 +16,7 @@ public class ValidationErrorResolver {
         errorMapping.put("createGenerationRequest", ErrorCode.GENERATION_REQUEST_REQUIRED_FIELDS_MISSING);
         errorMapping.put("pageRequest", ErrorCode.INVALID_PAGE_PARAM);
         errorMapping.put("updateGenerationRequest", ErrorCode.GENERATION_REQUEST_REQUIRED_FIELDS_MISSING);
+        errorMapping.put("regenerateContentRequest", ErrorCode.INVALID_REGENERATION_REQUEST);
 
     }
 
