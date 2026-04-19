@@ -10,9 +10,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "content_posts")
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access= AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class ContentPost {
 
@@ -41,4 +40,23 @@ public class ContentPost {
 
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
+
+    public void complete(String postUrl) {
+        this.status = PublishStatus.COMPLETED;
+        this.postUrl = postUrl;
+        this.publishedAt = LocalDateTime.now();
+    }
+
+    public void complete(String externalId, String postUrl, LocalDateTime publishedAt) {
+        this.status = PublishStatus.COMPLETED;
+        this.externalId = externalId;
+        this.postUrl = postUrl;
+        this.publishedAt = publishedAt;
+    }
+
+    public void fail() {
+        this.status = PublishStatus.FAILED;
+        this.postUrl = null;
+        this.publishedAt = null;
+    }
 }

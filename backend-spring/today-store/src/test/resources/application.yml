@@ -68,3 +68,10 @@ app:
     api-key: test_gemini_key
     model: "gemini-3-flash-preview"
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
+
+instagram:
+  app-id: "instagram-app-id"
+  app-secret: "instagram-app-secret"
+
+encryption:
+  secret-key: "abcdefghijklmnopqrstuvwxyz123456"

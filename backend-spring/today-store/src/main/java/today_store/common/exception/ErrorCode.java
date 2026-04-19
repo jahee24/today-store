@@ -35,6 +35,7 @@ public enum ErrorCode {
     GENERATION_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "C005", "Request not found or already deleted"),
     INVALID_REGENERATION_REQUEST(HttpStatus.BAD_REQUEST, "C006", "Empty feedback or Invalid target platform"),
     CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "C007", "Content not found or already deleted"),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "C008", "Post history not found"),
 
     // Generation Task
     GENERATION_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "G001", "Generation task is already in progress or completed"),
@@ -49,6 +50,16 @@ public enum ErrorCode {
     // AI / Gemini
     AI_RESPONSE_EMPTY(HttpStatus.INTERNAL_SERVER_ERROR, "AI001", "Gemini returned empty response"),
     AI_PARSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI002", "Failed to parse AI response"),
+
+    // Instagram
+    INSTAGRAM_INVALID_AUTH_CODE(HttpStatus.BAD_REQUEST, "I001", "Invalid or expired authorization code"),
+    INSTAGRAM_ALREADY_LINKED(HttpStatus.CONFLICT, "I002", "This Instagram account is already linked to another user"),
+    INSTAGRAM_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "I003", "Instagram access token expired. Please re-authenticate."),
+    INSTAGRAM_NOT_LINKED(HttpStatus.BAD_REQUEST, "I004", "Instagram account is not linked to this user."),
+    INSTAGRAM_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "I005", "Instagram permission denied. Please check your account scopes."),
+    INSTAGRAM_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "I006", "Instagram API error: %s"),
+    INSTAGRAM_RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "I007", "Instagram API rate limit exceeded. Please try again later."),
+
     AI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "AI003", "AI generation request failed. Please try again later.");
 
     private final HttpStatus status;

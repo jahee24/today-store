@@ -64,7 +64,11 @@ public class AuthenticationService {
         Map<String, Object> userAttributes = getUserAttributes(clientRegistration, loginRequest.getAccessToken());
         OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(loginRequest.getProvider(), userAttributes);
 
-        String maskedEmail = oAuth2UserInfo.getEmail().replaceAll("(?<=.{3}).(?=.*@)", "*");
+        String rawEmail = oAuth2UserInfo.getEmail();
+        String maskedEmail = (rawEmail != null)
+                ? rawEmail.replaceAll("(?<=.{3}).(?=.*@)", "*")
+                : "NO_EMAIL";
+
         log.debug("OAuth2 User authenticated. Email: {}, Provider: {}", maskedEmail, loginRequest.getProvider());
 
         boolean isNewUser = userRepository.findByProviderAndProviderId(loginRequest.getProvider(), oAuth2UserInfo.getId()).isEmpty();
@@ -132,6 +136,7 @@ public class AuthenticationService {
         refreshTokenRepository.save(new RefreshToken(user.getId(), newRefreshToken));
         log.info("New refresh token saved in Redis for user ID: {}", user.getId());
 
+        // 6. Return new tokens
         return RefreshTokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
@@ -225,6 +230,14 @@ public class AuthenticationService {
     }
 
     private User saveOrUpdate(OAuth2UserInfo oAuth2UserInfo, String provider) {
+        String email = oAuth2UserInfo.getEmail();
+        if (email == null || email.isBlank()) {
+            email = oAuth2UserInfo.getId() + "@" + provider + ".com";
+            log.info("Email not provided by {}, using fallback: {}", provider, email);
+        }
+
+        final String finalEmail = email;
+
         User user = userRepository.findByProviderAndProviderId(provider, oAuth2UserInfo.getId())
                 .map(entity -> {
                     log.info("Updating last login time for user: {}", entity.getId());
@@ -236,9 +249,9 @@ public class AuthenticationService {
                     return entity;
                 })
                 .orElseGet(() -> {
-                    log.info("Creating new user with email: {}", oAuth2UserInfo.getId());
+                    log.info("Creating new user with email: {}",oAuth2UserInfo.getId() );
                     return new User(
-                            oAuth2UserInfo.getEmail(),
+                            finalEmail,
                             oAuth2UserInfo.getName(),
                             provider,
                             oAuth2UserInfo.getId(),
@@ -248,6 +261,4 @@ public class AuthenticationService {
 
         return userRepository.save(user);
     }
-
-
 }

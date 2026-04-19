@@ -63,12 +63,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
     protected ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
-        log.error("CustomException: {}", e.getErrorCode().getMessage());
+        log.error("CustomException: {}", e.getMessage());
         ErrorCode errorCode = e.getErrorCode();
         ErrorResponse response = ErrorResponse.builder()
                 .status(errorCode.getStatus().value())
                 .code(errorCode.getCode())
-                .message(errorCode.getMessage())
+                .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
         return new ResponseEntity<>(response, errorCode.getStatus());
