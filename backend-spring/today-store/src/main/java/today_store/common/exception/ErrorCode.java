@@ -60,6 +60,7 @@ public enum ErrorCode {
     INSTAGRAM_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "I006", "Instagram API error: %s"),
     INSTAGRAM_RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "I007", "Instagram API rate limit exceeded. Please try again later.");
 
+    AI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "AI003", "AI generation request failed. Please try again later.");
 
     private final HttpStatus status;
     private final String code;

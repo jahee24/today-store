@@ -7,12 +7,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import today_store.authentication.entity.User;
 import today_store.authentication.exception.AccessDeniedToResourceException;
 import today_store.authentication.repository.UserRepository;
 import today_store.common.config.GeminiConfig;
+import today_store.common.exception.CustomException;
+import today_store.common.exception.ErrorCode;
 import today_store.common.gcs.GcsService;
 import today_store.common.gemini.dto.GeminiPromptRequest;
 import today_store.common.gemini.dto.GeminiRegenerationRequest;
@@ -175,10 +178,14 @@ public class ContentService {
                     });
                 })
                 .doOnError(e -> {
-                    log.error("Error during background generation for apiLog {}: {}", apiLogId, e.getMessage(), e);
+                    String safeErrorMessage = toSafeTaskErrorMessage(e);
+                    log.error("Error during background generation for apiLog {} [{}]: {}",
+                            apiLogId,
+                            Exceptions.unwrap(e).getClass().getSimpleName(),
+                            safeErrorMessage);
                     transactionTemplate.execute(status -> {
                         ApiLog apiLog = apiLogRepository.findById(apiLogId).orElseThrow();
-                        apiLog.completeError(e.getMessage());
+                        apiLog.completeError(safeErrorMessage);
                         apiLogRepository.save(apiLog);
                         return null;
                     });
@@ -290,6 +297,7 @@ public class ContentService {
             throw new AccessDeniedToResourceException();
         }
 
+        TargetPlatform.from(request.getTarget());
         GenerationRequest genRequest = originalContent.getGenerationRequest();
 
         ApiLog apiLog = ApiLog.builder()
@@ -319,26 +327,23 @@ public class ContentService {
 
                         String originalText;
                         List<String> originalHashtags;
-                        String target = regenerateRequest.getTarget();
-                        if ("INSTAGRAM".equals(target)) {
+                        TargetPlatform targetPlatform = TargetPlatform.from(regenerateRequest.getTarget());
+                        if (targetPlatform == TargetPlatform.INSTAGRAM) {
                             originalText = originalContent.getInstagramText();
                             originalHashtags = originalContent.getInstagramHashtags();
-                        } else if ("KARROT".equals(target)) {
+                        } else if (targetPlatform == TargetPlatform.KARROT) {
                             originalText = originalContent.getKarrotText();
                             originalHashtags = originalContent.getKarrotTags();
-                        } else if ("NAVER".equals(target)) {
+                        } else {
                             originalText = originalContent.getNaverText();
                             originalHashtags = originalContent.getNaverKeywords();
-                        } else {
-                            originalText = "";
-                            originalHashtags = List.of();
                         }
 
                         return GeminiRegenerationRequest.builder()
                                 .originalText(originalText)
                                 .originalHashtags(originalHashtags)
                                 .feedback(regenerateRequest.getFeedback())
-                                .target(target)
+                                .target(targetPlatform.name())
                                 .build();
                     });
                 })
@@ -352,15 +357,15 @@ public class ContentService {
                         Content originalContent = contentRepository.findById(originalContentId).orElseThrow();
 
                         // Merge with original content (Only update target platform)
-                        String target = regenerateRequest.getTarget();
+                        TargetPlatform targetPlatform = TargetPlatform.from(regenerateRequest.getTarget());
                         Content newContent = Content.builder()
                                 .generationRequest(request)
-                                .instagramText("INSTAGRAM".equals(target) && parsed.getText() != null ? parsed.getText() : originalContent.getInstagramText())
-                                .instagramHashtags("INSTAGRAM".equals(target) && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getInstagramHashtags())
-                                .karrotText("KARROT".equals(target) && parsed.getText() != null ? parsed.getText() : originalContent.getKarrotText())
-                                .karrotTags("KARROT".equals(target) && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getKarrotTags())
-                                .naverText("NAVER".equals(target) && parsed.getText() != null ? parsed.getText() : originalContent.getNaverText())
-                                .naverKeywords("NAVER".equals(target) && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getNaverKeywords())
+                                .instagramText(targetPlatform == TargetPlatform.INSTAGRAM && parsed.getText() != null ? parsed.getText() : originalContent.getInstagramText())
+                                .instagramHashtags(targetPlatform == TargetPlatform.INSTAGRAM && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getInstagramHashtags())
+                                .karrotText(targetPlatform == TargetPlatform.KARROT && parsed.getText() != null ? parsed.getText() : originalContent.getKarrotText())
+                                .karrotTags(targetPlatform == TargetPlatform.KARROT && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getKarrotTags())
+                                .naverText(targetPlatform == TargetPlatform.NAVER && parsed.getText() != null ? parsed.getText() : originalContent.getNaverText())
+                                .naverKeywords(targetPlatform == TargetPlatform.NAVER && parsed.getHashtags() != null ? parsed.getHashtags() : originalContent.getNaverKeywords())
                                 .generationType(GenerationType.TEXT_ONLY)
                                 .aiModel(apiLog.getModel())
                                 .createdAt(LocalDateTime.now())
@@ -370,6 +375,7 @@ public class ContentService {
                         Content savedContent = contentRepository.save(newContent);
 
                         // Reuse images from original content
+                        // TODO: regenerateImage=true가 아직 미구현 상태
                         List<ContentImage> originalImages = contentImageRepository.findByContentOrderByCreatedAtAsc(originalContent);
                         for (ContentImage originalImg : originalImages) {
                             ContentImage newImg = ContentImage.builder()
@@ -392,15 +398,27 @@ public class ContentService {
                     });
                 })
                 .doOnError(e -> {
-                    log.error("Error during background regeneration for apiLog {}: {}", apiLogId, e.getMessage(), e);
+                    String safeErrorMessage = toSafeTaskErrorMessage(e);
+                    log.error("Error during background regeneration for apiLog {} [{}]: {}",
+                            apiLogId,
+                            Exceptions.unwrap(e).getClass().getSimpleName(),
+                            safeErrorMessage);
                     transactionTemplate.execute(status -> {
                         ApiLog apiLog = apiLogRepository.findById(apiLogId).orElseThrow();
-                        apiLog.completeError(e.getMessage());
+                        apiLog.completeError(safeErrorMessage);
                         apiLogRepository.save(apiLog);
                         return null;
                     });
                 })
                 .subscribe();
+    }
+
+    String toSafeTaskErrorMessage(Throwable throwable) {
+        Throwable cause = Exceptions.unwrap(throwable);
+        if (cause instanceof CustomException customException) {
+            return customException.getErrorCode().getMessage();
+        }
+        return ErrorCode.AI_REQUEST_FAILED.getMessage();
     }
 
     private BigDecimal calculateCost(Integer inputTokens, Integer outputTokens) {

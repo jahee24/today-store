@@ -1,13 +1,11 @@
 package today_store.content.content.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Getter
 @Builder
@@ -21,5 +19,9 @@ RegenerateContentRequest {
     private boolean regenerateImage;
 
     @NotBlank(message = "Target platform is required")
+    @Pattern(
+            regexp = "INSTAGRAM|KARROT|NAVER",
+            message = "Target platform must be one of INSTAGRAM, KARROT, NAVER"
+    )
     private String target;
 }

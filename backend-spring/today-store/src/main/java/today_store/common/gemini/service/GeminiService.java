@@ -60,6 +60,7 @@ public class GeminiService {
         long startTime = System.currentTimeMillis();
         return webClient.post()
                 .uri(url)
+                .headers(headers -> headers.set("x-goog-api-key", geminiConfig.getApiKey()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
