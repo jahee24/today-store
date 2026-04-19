@@ -58,7 +58,7 @@ public enum ErrorCode {
     INSTAGRAM_NOT_LINKED(HttpStatus.BAD_REQUEST, "I004", "Instagram account is not linked to this user."),
     INSTAGRAM_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "I005", "Instagram permission denied. Please check your account scopes."),
     INSTAGRAM_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "I006", "Instagram API error: %s"),
-    INSTAGRAM_RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "I007", "Instagram API rate limit exceeded. Please try again later.");
+    INSTAGRAM_RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "I007", "Instagram API rate limit exceeded. Please try again later."),
 
     AI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "AI003", "AI generation request failed. Please try again later.");
 
