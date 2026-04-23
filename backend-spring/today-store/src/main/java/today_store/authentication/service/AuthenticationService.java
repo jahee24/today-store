@@ -210,7 +210,10 @@ public class AuthenticationService {
                     .onStatus(org.springframework.http.HttpStatusCode::isError, clientResponse -> {
                         log.error("Error while getting user attributes: {}", clientResponse.statusCode());
                         return clientResponse.bodyToMono(String.class)
-                                .map(body -> new InvalidOauthAccessTokenException());
+                                .map(body -> {
+                                    log.error("Kakao API error response: {}", body);
+                                    return new InvalidOauthAccessTokenException();
+                                });
                     })
                     .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                     .block();
