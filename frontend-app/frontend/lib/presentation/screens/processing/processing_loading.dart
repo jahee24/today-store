@@ -6,8 +6,15 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../data/models/processing_model.dart';
 
+enum ProcessingMode { text, image }
+
 class ProcessingLoadingScreen extends StatefulWidget {
-  const ProcessingLoadingScreen({super.key});
+  const ProcessingLoadingScreen({
+    super.key,
+    this.mode = ProcessingMode.text,
+  });
+
+  final ProcessingMode mode;
 
   @override
   State<ProcessingLoadingScreen> createState() =>
@@ -15,250 +22,413 @@ class ProcessingLoadingScreen extends StatefulWidget {
 }
 
 class _ProcessingLoadingScreenState extends State<ProcessingLoadingScreen> {
-    Timer? _timer;
+  Timer? _timer;
 
-    // 나중에 백엔드 진행률 값으로 교체
-    ProcessingUiState uiState = const ProcessingUiState(
+  late ProcessingUiState uiState;
+
+  @override
+  void initState() {
+    super.initState();
+    uiState = _initialState();
+    _startMockProgress();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  ProcessingUiState _initialState() {
+    if (widget.mode == ProcessingMode.image) {
+      return const ProcessingUiState(
         progress: 10,
+        title: 'AI가 이미지를 만들고 있어요',
+        subtitle: '사진 업로드 중...',
+        steps: [
+          ProcessingStepItem(
+            label: '사진 업로드',
+            status: ProcessingStepStatus.inProgress,
+          ),
+          ProcessingStepItem(
+            label: '구도 분석',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '이미지 합성',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '마무리',
+            status: ProcessingStepStatus.pending,
+          ),
+        ],
+      );
+    }
+
+    return const ProcessingUiState(
+      progress: 10,
+      title: 'AI가 콘텐츠를 만들고 있어요',
+      subtitle: '이미지 업로드 중...',
+      steps: [
+        ProcessingStepItem(
+          label: '이미지 업로드',
+          status: ProcessingStepStatus.inProgress,
+        ),
+        ProcessingStepItem(
+          label: '이미지 분석',
+          status: ProcessingStepStatus.pending,
+        ),
+        ProcessingStepItem(
+          label: '텍스트 생성 중',
+          status: ProcessingStepStatus.pending,
+        ),
+        ProcessingStepItem(
+          label: '스타일 적용',
+          status: ProcessingStepStatus.pending,
+        ),
+      ],
+    );
+  }
+
+  void _startMockProgress() {
+    _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
+      final nextProgress = uiState.progress + 15;
+
+      if (nextProgress >= 100) {
+        setState(() {
+          uiState = _completedState();
+        });
+
+        timer.cancel();
+
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (!mounted) return;
+          if (widget.mode == ProcessingMode.image) {
+            context.go('/image-result');
+          } else {
+            context.go('/result');
+          }
+        });
+
+        return;
+      }
+
+      setState(() {
+        uiState = _buildStateByProgress(nextProgress);
+      });
+    });
+  }
+
+  ProcessingUiState _completedState() {
+    if (widget.mode == ProcessingMode.image) {
+      return const ProcessingUiState(
+        progress: 100,
+        title: 'AI가 이미지를 만들고 있어요',
+        subtitle: '거의 다 됐어요!\n결과 화면으로 이동해요...',
+        steps: [
+          ProcessingStepItem(
+            label: '사진 업로드',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '구도 분석',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '이미지 합성',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '마무리',
+            status: ProcessingStepStatus.completed,
+          ),
+        ],
+      );
+    }
+
+    return const ProcessingUiState(
+      progress: 100,
+      title: 'AI가 콘텐츠를 만들고 있어요',
+      subtitle: '스타일 적용 완료\n결과를 정리하고 있어요...',
+      steps: [
+        ProcessingStepItem(
+          label: '이미지 업로드',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '이미지 분석',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '텍스트 생성 중',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '스타일 적용',
+          status: ProcessingStepStatus.completed,
+        ),
+      ],
+    );
+  }
+
+  ProcessingUiState _buildStateByProgress(int progress) {
+    if (widget.mode == ProcessingMode.image) {
+      return _buildImageStateByProgress(progress);
+    }
+    return _buildTextStateByProgress(progress);
+  }
+
+  ProcessingUiState _buildImageStateByProgress(int progress) {
+    if (progress < 25) {
+      return ProcessingUiState(
+        progress: progress,
+        title: 'AI가 이미지를 만들고 있어요',
+        subtitle: '사진 업로드 중...',
+        steps: const [
+          ProcessingStepItem(
+            label: '사진 업로드',
+            status: ProcessingStepStatus.inProgress,
+          ),
+          ProcessingStepItem(
+            label: '구도 분석',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '이미지 합성',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '마무리',
+            status: ProcessingStepStatus.pending,
+          ),
+        ],
+      );
+    }
+    if (progress < 50) {
+      return ProcessingUiState(
+        progress: progress,
+        title: 'AI가 이미지를 만들고 있어요',
+        subtitle: '업로드 완료\n구도 분석 중...',
+        steps: const [
+          ProcessingStepItem(
+            label: '사진 업로드',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '구도 분석',
+            status: ProcessingStepStatus.inProgress,
+          ),
+          ProcessingStepItem(
+            label: '이미지 합성',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '마무리',
+            status: ProcessingStepStatus.pending,
+          ),
+        ],
+      );
+    }
+    if (progress < 80) {
+      return ProcessingUiState(
+        progress: progress,
+        title: 'AI가 이미지를 만들고 있어요',
+        subtitle: '분석 완료\n이미지 합성 중...',
+        steps: const [
+          ProcessingStepItem(
+            label: '사진 업로드',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '구도 분석',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '이미지 합성',
+            status: ProcessingStepStatus.inProgress,
+          ),
+          ProcessingStepItem(
+            label: '마무리',
+            status: ProcessingStepStatus.pending,
+          ),
+        ],
+      );
+    }
+    return ProcessingUiState(
+      progress: progress,
+      title: 'AI가 이미지를 만들고 있어요',
+      subtitle: '합성 완료\n마무리 중...',
+      steps: const [
+        ProcessingStepItem(
+          label: '사진 업로드',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '구도 분석',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '이미지 합성',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '마무리',
+          status: ProcessingStepStatus.inProgress,
+        ),
+      ],
+    );
+  }
+
+  ProcessingUiState _buildTextStateByProgress(int progress) {
+    if (progress < 25) {
+      return ProcessingUiState(
+        progress: progress,
         title: 'AI가 콘텐츠를 만들고 있어요',
         subtitle: '이미지 업로드 중...',
-        steps: [
-            ProcessingStepItem(
-                label: '이미지 업로드',
-                status: ProcessingStepStatus.inProgress,
-            ),
-            ProcessingStepItem(
-                label: '이미지 분석',
-                status: ProcessingStepStatus.pending,
-            ),
-            ProcessingStepItem(
-                label: '텍스트 생성 중',
-                status: ProcessingStepStatus.pending,
-            ),
-            ProcessingStepItem(
-                label: '스타일 적용',
-                status: ProcessingStepStatus.pending
-            ),
+        steps: const [
+          ProcessingStepItem(
+            label: '이미지 업로드',
+            status: ProcessingStepStatus.inProgress,
+          ),
+          ProcessingStepItem(
+            label: '이미지 분석',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '텍스트 생성 중',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '스타일 적용',
+            status: ProcessingStepStatus.pending,
+          ),
         ],
+      );
+    }
+    if (progress < 50) {
+      return ProcessingUiState(
+        progress: progress,
+        title: 'AI가 콘텐츠를 만들고 있어요',
+        subtitle: '이미지 업로드 완료\n이미지 분석 중...',
+        steps: const [
+          ProcessingStepItem(
+            label: '이미지 업로드',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '이미지 분석',
+            status: ProcessingStepStatus.inProgress,
+          ),
+          ProcessingStepItem(
+            label: '텍스트 생성 중',
+            status: ProcessingStepStatus.pending,
+          ),
+          ProcessingStepItem(
+            label: '스타일 적용',
+            status: ProcessingStepStatus.pending,
+          ),
+        ],
+      );
+    }
+    if (progress < 80) {
+      return ProcessingUiState(
+        progress: progress,
+        title: 'AI가 콘텐츠를 만들고 있어요',
+        subtitle: '이미지 분석 완료\n텍스트 생성 중...',
+        steps: const [
+          ProcessingStepItem(
+            label: '이미지 업로드',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '이미지 분석',
+            status: ProcessingStepStatus.completed,
+          ),
+          ProcessingStepItem(
+            label: '텍스트 생성 중',
+            status: ProcessingStepStatus.inProgress,
+          ),
+          ProcessingStepItem(
+            label: '스타일 적용',
+            status: ProcessingStepStatus.pending,
+          ),
+        ],
+      );
+    }
+    return ProcessingUiState(
+      progress: progress,
+      title: 'AI가 콘텐츠를 만들고 있어요',
+      subtitle: '텍스트 생성 완료\n스타일 적용 중...',
+      steps: const [
+        ProcessingStepItem(
+          label: '이미지 업로드',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '이미지 분석',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '텍스트 생성 중',
+          status: ProcessingStepStatus.completed,
+        ),
+        ProcessingStepItem(
+          label: '스타일 적용',
+          status: ProcessingStepStatus.inProgress,
+        ),
+      ],
     );
-    
-    @override
-    void initState() {
-        super.initState();
-        _startMockProgress();
-    }
+  }
 
-    @override
-    void dispose() {
-        _timer?.cancel();
-        super.dispose();
-    }
-
-    void _startMockProgress() {
-        _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
-            final nextProgress = uiState.progress + 15;
-
-            if (nextProgress >= 100) {
-                setState(() {
-                    uiState = const ProcessingUiState(
-                        progress: 100, 
-                        title: 'AI가 콘텐츠를 만들고 있어요', 
-                        subtitle: '스타일 적용 완료\n결과를 정리하고 있어요...', 
-                        steps: [
-                            ProcessingStepItem(
-                                label: '이미지 업로드', 
-                                status: ProcessingStepStatus.completed,
-                            ),
-                            ProcessingStepItem(
-                                label: '이미지 분석', 
-                                status: ProcessingStepStatus.completed,
-                            ),
-                            ProcessingStepItem(
-                                label: '텍스트 생성 중', 
-                                status: ProcessingStepStatus.completed,
-                            ),
-                            ProcessingStepItem(
-                                label: '스타일 적용', 
-                                status: ProcessingStepStatus.completed,
-                            ),
-                        ],
-                    );
-                });
-
-                timer.cancel();
-
-                Future.delayed(const Duration(milliseconds: 500), () {
-                    if (!mounted) return;
-                    context.go('/result');
-                });
-
-                return;
-            }
-
-            setState(() {
-                uiState = _buildStateByProgress(nextProgress);
-            });
-        });
-    }
-
-    ProcessingUiState _buildStateByProgress(int progress) {
-        if (progress < 25) {
-            return ProcessingUiState(
-                progress: progress, 
-                title: 'AI가 콘텐츠를 만들고 있어요', 
-                subtitle: '이미지 업로드 중...', 
-                steps: const [
-                    ProcessingStepItem(
-                        label: '이미지 업로드', 
-                        status: ProcessingStepStatus.inProgress,
-                    ),
-                    ProcessingStepItem(
-                        label: '이미지 분석', 
-                        status: ProcessingStepStatus.pending,
-                    ),
-                    ProcessingStepItem(
-                        label: '텍스트 생성 중', 
-                        status: ProcessingStepStatus.pending,
-                    ),
-                    ProcessingStepItem(
-                        label: '스타일 적용', 
-                        status: ProcessingStepStatus.pending,
-                    ),
-                ],
-            );
-        } else if (progress < 50) {
-            return ProcessingUiState(
-                progress: progress, 
-                title: 'AI가 콘텐츠를 만들고 있어요', 
-                subtitle: '이미지 업로드 완료\n이미지 분석 중...', 
-                steps: const [
-                    ProcessingStepItem(
-                        label: '이미지 업로드', 
-                        status: ProcessingStepStatus.completed,
-                    ),
-                    ProcessingStepItem(
-                        label: '이미지 분석', 
-                        status: ProcessingStepStatus.inProgress,
-                    ),
-                    ProcessingStepItem(
-                        label: '텍스트 생성 중', 
-                        status: ProcessingStepStatus.pending,
-                    ),
-                    ProcessingStepItem(
-                        label: '스타일 적용', 
-                        status: ProcessingStepStatus.pending,
-                    ),
-                ],
-            );
-        } else if (progress < 80) {
-            return ProcessingUiState(
-                progress: progress, 
-                title: 'AI가 콘텐츠를 만들고 있어요', 
-                subtitle: '이미지 분석 완료\n텍스트 생성 중...', 
-                steps: const [
-                    ProcessingStepItem(
-                        label: '이미지 업로드', 
-                        status: ProcessingStepStatus.completed,
-                    ),
-                    ProcessingStepItem(
-                        label: '이미지 분석', 
-                        status: ProcessingStepStatus.completed,
-                    ),
-                    ProcessingStepItem(
-                        label: '텍스트 생성 중', 
-                        status: ProcessingStepStatus.inProgress,
-                    ),
-                    ProcessingStepItem(
-                        label: '스타일 적용', 
-                        status: ProcessingStepStatus.pending,
-                    ),
-                ],
-            );
-        } else {
-            return ProcessingUiState(
-                progress: progress, 
-                title: 'AI가 콘텐츠를 만들고 있어요', 
-                subtitle: '텍스트 생성 완료\n스타일 적용 중...', 
-                steps: const [
-                    ProcessingStepItem(
-                        label: '이미지 업로드', 
-                        status: ProcessingStepStatus.completed,
-                    ),
-                    ProcessingStepItem(
-                        label: '이미지 분석', 
-                        status: ProcessingStepStatus.completed,
-                    ),
-                    ProcessingStepItem(
-                        label: '텍스트 생성 중', 
-                        status: ProcessingStepStatus.completed,
-                    ),
-                    ProcessingStepItem(
-                        label: '스타일 적용', 
-                        status: ProcessingStepStatus.inProgress,
-                    ),
-                ],
-            );
-        }
-    }
-
-    @override
-    Widget build(BuildContext context) {
-        final textTheme = Theme.of(context).textTheme;
-            return Scaffold(
-                backgroundColor: AppTheme.backgroundColor,
-                body: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                      child: Column(
-                        children: [
-                            const Spacer(flex: 2),
-                            
-                            _ProgressCircle(progress: uiState.progress),
-                            
-                            const SizedBox(height: 36),
-                            
-                            Text(
-                                uiState.title,
-                                textAlign: TextAlign.center,
-                                style: textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.textPrimary,
-                                ),
-                            ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            Text(
-                                uiState.subtitle,
-                                textAlign: TextAlign.center,
-                                style: textTheme.bodyLarge?.copyWith(
-                                    color: AppTheme.textTertiary,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.5,
-                                ),
-                            ),
-
-                            const SizedBox(height: 40),
-
-                            _ProcessingStepCard(
-                                steps: uiState.steps,
-                            ),
-                            
-                            const Spacer(flex: 3),
-                            ],
-                        ),
-                    ),
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          child: Column(
+            children: [
+              const Spacer(flex: 2),
+              _ProgressCircle(progress: uiState.progress),
+              const SizedBox(height: 36),
+              Text(
+                uiState.title,
+                textAlign: TextAlign.center,
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
                 ),
-            );
-    }
+              ),
+              const SizedBox(height: 16),
+              Text(
+                uiState.subtitle,
+                textAlign: TextAlign.center,
+                style: textTheme.bodyLarge?.copyWith(
+                  color: AppTheme.textTertiary,
+                  fontWeight: FontWeight.w500,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              _ProcessingStepCard(
+                steps: uiState.steps,
+              ),
+              const Spacer(flex: 3),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ProgressCircle extends StatelessWidget {
-  final int progress;
+  const _ProgressCircle({required this.progress});
 
-  const _ProgressCircle({
-    required this.progress,
-  });
+  final int progress;
 
   @override
   Widget build(BuildContext context) {
@@ -298,11 +468,9 @@ class _ProgressCircle extends StatelessWidget {
 }
 
 class _ProcessingStepCard extends StatelessWidget {
-  final List<ProcessingStepItem> steps;
+  const _ProcessingStepCard({required this.steps});
 
-  const _ProcessingStepCard({
-    required this.steps,
-  });
+  final List<ProcessingStepItem> steps;
 
   @override
   Widget build(BuildContext context) {
@@ -329,11 +497,9 @@ class _ProcessingStepCard extends StatelessWidget {
 }
 
 class _ProcessingStepRow extends StatelessWidget {
-  final ProcessingStepItem step;
+  const _ProcessingStepRow({required this.step});
 
-  const _ProcessingStepRow({
-    required this.step,
-  });
+  final ProcessingStepItem step;
 
   @override
   Widget build(BuildContext context) {

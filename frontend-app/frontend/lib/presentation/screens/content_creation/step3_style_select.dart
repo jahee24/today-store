@@ -64,10 +64,12 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
   @override
   void initState() {
     super.initState();
-    final current = ref.read(contentCreationProvider).selectedStyle;
-    if (current == null) {
-      ref.read(contentCreationProvider.notifier).setSelectedStyle('감성적'); // 기본 스타일
-    }
+    Future.microtask(() {
+      final current = ref.read(contentCreationProvider).selectedStyle;
+      if (current == null) {
+        ref.read(contentCreationProvider.notifier).setSelectedStyle('감성적');
+      }
+    });
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../widgets/cards/recent_content_card.dart';
 import '../../widgets/cards/stat_card.dart';
+import '../../widgets/buttons/creation_action_button.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -89,32 +90,23 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 22),
-                        SizedBox(
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              context.go('/step1');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: AppTheme.primaryColor,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CreationActionButton(
+                                label: '+ 문구 생성',
+                                onPressed: () => context.go('/step1'),
                               ),
                             ),
-                            child: Text(
-                              '+ 시작하기',
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: AppTheme.primaryColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CreationActionButton(
+                                label: '+ 이미지 생성',
+                                filled: false,
+                                onPressed: () => context.go('/image-step1'),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
