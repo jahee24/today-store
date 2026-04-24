@@ -22,7 +22,7 @@ class Step4PreviewGenerate extends ConsumerWidget {
   }
 
   void _handleGenerate(BuildContext context) {
-    context.go('/processing');
+    context.push('/processing?mode=text');
   }
 
   @override

@@ -58,16 +58,18 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
   }
 
   void _handleNext() {
-    context.go('/step4');
+    context.push('/step4');
   }
 
   @override
   void initState() {
     super.initState();
-    final current = ref.read(contentCreationProvider).selectedStyle;
-    if (current == null) {
-      ref.read(contentCreationProvider.notifier).setSelectedStyle('감성적'); // 기본 스타일
-    }
+    Future.microtask(() {
+      final current = ref.read(contentCreationProvider).selectedStyle;
+      if (current == null) {
+        ref.read(contentCreationProvider.notifier).setSelectedStyle('감성적');
+      }
+    });
   }
 
   @override

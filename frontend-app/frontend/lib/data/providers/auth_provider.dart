@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide AuthApi;
@@ -74,14 +76,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) : super(const AuthState(status: AuthStatus.initial));
 
   Future<void> loginWithGoogle() async {
+    // iOS는 GoogleService-Info.plist 설정 전까지 네이티브 크래시 방지
+    if (Platform.isIOS) {
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'iOS Google 로그인은 준비 중이에요.\n카카오 로그인을 이용해주세요.',
+      );
+      return;
+    }
+
     state = state.copyWith(
-      status: AuthStatus.loading, 
+      status: AuthStatus.loading,
       errorMessage: null,
     );
 
     try {
       final googleSignIn = GoogleSignIn(
         scopes: <String>['email', 'profile'],
+        serverClientId: '549695709482-asrt15cmpvk0g3e97m2jlfkcagvg5ncl.apps.googleusercontent.com',
       );
 
       final GoogleSignInAccount? account = await googleSignIn.signIn();
@@ -102,7 +114,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
 
       final result = await authRepository.oauthLogin(
-        provider: 'google', 
+        provider: 'google',
         accessToken: accessToken,
       );
       state = state.copyWith(

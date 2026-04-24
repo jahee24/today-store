@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../widgets/cards/recent_content_card.dart';
 import '../../widgets/cards/stat_card.dart';
+import '../../widgets/buttons/creation_action_button.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -57,6 +58,22 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      Material(
+                        color: AppTheme.fillLight,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => context.push('/settings'),
+                          child: const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Icon(
+                              Icons.settings_outlined,
+                              color: AppTheme.textSecondary,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 22),
@@ -82,39 +99,30 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '사진만 올리면 AI가 알아서 만들어 드려요',
+                          'AI가 알아서 만들어 드려요',
                           style: textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withOpacity(0.85),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 22),
-                        SizedBox(
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              context.go('/step1');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: AppTheme.primaryColor,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CreationActionButton(
+                                label: '+ 문구 생성',
+                                onPressed: () => context.push('/step1'),
                               ),
                             ),
-                            child: Text(
-                              '+ 시작하기',
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: AppTheme.primaryColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CreationActionButton(
+                                label: '+ 이미지 생성',
+                                filled: false,
+                                onPressed: () => context.push('/image-step1'),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -160,7 +168,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          context.go('/history');
+                          context.push('/history');
                         },
                         child: const Text(
                           '전체보기',
@@ -174,20 +182,26 @@ class DashboardScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const RecentContentCard(
+                  RecentContentCard(
                     title: '시즌 딸기 라떼 홍보',
                     subtitle: '2분 전 · 감성적',
-                    badgeText: '완료',
-                    badgeTextColor: AppTheme.successText,
-                    badgeBgColor: AppTheme.successBg,
+                    badgeText: '문구',
+                    badgeTextColor: AppTheme.primaryColor,
+                    badgeBgColor: const Color(0xFFEEEAFE),
+                    thumbnailEmoji: '📸',
+                    thumbnailBgColor: AppTheme.fillLight,
+                    onTap: () => context.push('/result'),
                   ),
                   const SizedBox(height: 14),
-                  const RecentContentCard(
-                    title: '매장 인테리어 리뉴얼',
-                    subtitle: '어제 · 정보제공',
-                    badgeText: '공유됨',
-                    badgeTextColor: AppTheme.infoText,
-                    badgeBgColor: AppTheme.infoBg,
+                  RecentContentCard(
+                    title: '매장 인테리어 사진',
+                    subtitle: '어제 · 8장 생성',
+                    badgeText: '이미지',
+                    badgeTextColor: const Color(0xFF5B9B4C),
+                    badgeBgColor: const Color(0xFFEAF6E5),
+                    thumbnailEmoji: '🎨',
+                    thumbnailBgColor: const Color(0xFFE6F2F5),
+                    onTap: () => context.push('/image-result'),
                   ),
                 ],
               ),

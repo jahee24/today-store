@@ -1,34 +1,35 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:fronted/presentation/widgets/dialogs/permission_alert_dialog.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/providers/content_creation_provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../data/providers/image_content_creation_provider.dart';
 import '../../../services/image_service.dart';
+import '../../widgets/buttons/back_arrow_button.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/cards/dotted_lined_card.dart';
+import '../../widgets/dialogs/permission_alert_dialog.dart';
 import '../../widgets/progress/step_indicator_line.dart';
-import '../../widgets/buttons/back_arrow_button.dart';
 
-class Step1PhotoUpload extends ConsumerStatefulWidget {
-  const Step1PhotoUpload({super.key});
+class ImageStep1PhotoUpload extends ConsumerStatefulWidget {
+  const ImageStep1PhotoUpload({super.key});
 
   @override
-  ConsumerState<Step1PhotoUpload> createState() => _Step1PhotoUploadState();
+  ConsumerState<ImageStep1PhotoUpload> createState() =>
+      _ImageStep1PhotoUploadState();
 }
 
-class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
-  static const int _maxImages = 5;
+class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
+  static const int _maxImages = 8;
 
   final List<XFile> _images = [];
 
   Future<void> _openSourceSheet() async {
     if (_images.length >= _maxImages) {
-      _showSnackBar('사진은 최대 5장까지 업로드할 수 있어요.');
+      _showSnackBar('사진은 최대 $_maxImages장까지 업로드할 수 있어요.');
       return;
     }
 
@@ -89,22 +90,17 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
   Future<void> _pickFromGallery() async {
     try {
       final remainCount = _maxImages - _images.length;
-
       final picked = await ImageService.pickFromGallery(
         remainCount: remainCount,
       );
-
       if (picked.isEmpty) return;
-
-      setState(() {
-        _images.addAll(picked);
-      });
+      setState(() => _images.addAll(picked));
     } on PermissionDeniedException {
       await _showPermissionDialog(
-        title: '사진에 대한 액세스\n권한이 없어요.', 
-        description: '설정 앱에서 권한을 수정할 수 있어요.'
+        title: '사진에 대한 액세스\n권한이 없어요.',
+        description: '설정 앱에서 권한을 수정할 수 있어요.',
       );
-    } catch (e) {
+    } catch (_) {
       _showSnackBar('사진을 불러오는 중 문제가 발생했어요.');
     }
   }
@@ -112,23 +108,18 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
   Future<void> _pickFromCamera() async {
     try {
       if (_images.length >= _maxImages) {
-        _showSnackBar('사진은 최대 5장까지 업로드할 수 있어요.');
+        _showSnackBar('사진은 최대 $_maxImages장까지 업로드할 수 있어요.');
         return;
       }
-
       final picked = await ImageService.pickFromCamera();
-
       if (picked == null) return;
-
-      setState(() {
-        _images.add(picked);
-      });
+      setState(() => _images.add(picked));
     } on PermissionDeniedException {
       await _showPermissionDialog(
-        title: '카메라에 대한 액세스\n권한이 없어요.', 
-        description: '설정 앱에서 권한을 수정할 수 있어요.'
+        title: '카메라에 대한 액세스\n권한이 없어요.',
+        description: '설정 앱에서 권한을 수정할 수 있어요.',
       );
-    } catch (e) {
+    } catch (_) {
       _showSnackBar('카메라를 여는 중 문제가 발생했어요.');
     }
   }
@@ -136,17 +127,12 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
   @override
   void initState() {
     super.initState();
-    _images.addAll(ref.read(contentCreationProvider).images);
+    _images.addAll(ref.read(imageContentCreationProvider).images);
   }
 
   void _removeImage(int index) {
     if (index < 0 || index >= _images.length) return;
-
-    setState(() {
-      _images.removeAt(index);
-    });
-
-    ref.read(contentCreationProvider.notifier).removeImageAt(index);
+    setState(() => _images.removeAt(index));
   }
 
   void _handleNext() {
@@ -154,14 +140,12 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
       _showSnackBar('사진을 1장 이상 추가해주세요.');
       return;
     }
-
-    ref.read(contentCreationProvider.notifier).setImages(_images);
-    context.push('/step2');
+    ref.read(imageContentCreationProvider.notifier).setImages(_images);
+    context.push('/processing?mode=image');
   }
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -172,11 +156,10 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
     required String description,
   }) async {
     if (!mounted) return;
-
     await PermissionAlertDialog.show(
-      context, 
-      title: title, 
-      description: description
+      context,
+      title: title,
+      description: description,
     );
   }
 
@@ -191,10 +174,9 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
-    const double horizontalPadding = 24;
-    const double uploadBoxHeight = 270;
-    const double thumbnailSize = 104;
+    const horizontalPadding = 24.0;
+    const uploadBoxHeight = 270.0;
+    const thumbnailSize = 104.0;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -211,10 +193,10 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
             children: [
               Row(
                 children: [
-                 BackArrowButton(onTap: _handleBack),
+                  BackArrowButton(onTap: _handleBack),
                   const SizedBox(width: 14),
                   Text(
-                    '콘텐츠 만들기',
+                    '이미지 콘텐츠 만들기',
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
@@ -223,13 +205,10 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                 ],
               ),
               const SizedBox(height: 26),
-
-              const StepIndicatorLine(currentStep: 1, totalSteps: 4),
-
+              const StepIndicatorLine(currentStep: 1, totalSteps: 2),
               const SizedBox(height: 34),
-
               Text(
-                '사진을 올려주세요',
+                '매장 사진을 올려주세요',
                 style: textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
@@ -237,24 +216,18 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
               ),
               const SizedBox(height: 8),
               Text(
-                '최대 5장까지 업로드할 수 있어요',
+                '최대 $_maxImages장까지 업로드할 수 있어요',
                 style: textTheme.bodyLarge?.copyWith(
                   color: AppTheme.textTertiary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const SizedBox(height: 24),
-
               SizedBox(
                 height: uploadBoxHeight,
-                child: DottedLinedCard(
-                  onTap: _openSourceSheet,
-                ),
+                child: DottedLinedCard(onTap: _openSourceSheet),
               ),
-
               const SizedBox(height: 18),
-
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -273,9 +246,7 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                     ),
                 ],
               ),
-
               const SizedBox(height: 12),
-
               Text(
                 '${_images.length}/$_maxImages장 업로드됨',
                 style: textTheme.bodyLarge?.copyWith(
@@ -283,11 +254,9 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const Spacer(),
-
               PrimaryButton(
-                text: '다음 →',
+                text: '생성 시작 →',
                 fontSize: 21,
                 onPressed: _images.isEmpty ? null : _handleNext,
               ),
@@ -300,15 +269,15 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
 }
 
 class _ImageThumbnailCard extends StatelessWidget {
-  final String imagePath;
-  final double size;
-  final VoidCallback onRemove;
-
   const _ImageThumbnailCard({
     required this.imagePath,
     required this.size,
     required this.onRemove,
   });
+
+  final String imagePath;
+  final double size;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -340,11 +309,7 @@ class _ImageThumbnailCard extends StatelessWidget {
                 color: AppTheme.dangerText,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.close,
-                size: 16,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
             ),
           ),
         ),
@@ -354,13 +319,10 @@ class _ImageThumbnailCard extends StatelessWidget {
 }
 
 class _AddThumbnailCard extends StatelessWidget {
+  const _AddThumbnailCard({required this.size, required this.onTap});
+
   final double size;
   final VoidCallback onTap;
-
-  const _AddThumbnailCard({
-    required this.size,
-    required this.onTap,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -372,31 +334,24 @@ class _AddThumbnailCard extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: AppTheme.borderStrongColor,
-            width: 2,
-          ),
+          border: Border.all(color: AppTheme.borderStrongColor, width: 2),
         ),
-        child: const Icon(
-          Icons.add,
-          size: 34,
-          color: AppTheme.textHint,
-        ),
+        child: const Icon(Icons.add, size: 34, color: AppTheme.textHint),
       ),
     );
   }
 }
 
 class _SourceTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
   const _SourceTile({
     required this.icon,
     required this.title,
     required this.onTap,
   });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

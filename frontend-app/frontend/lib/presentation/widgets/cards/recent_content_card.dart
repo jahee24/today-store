@@ -8,6 +8,8 @@ class RecentContentCard extends StatelessWidget {
   final String badgeText;
   final Color badgeTextColor;
   final Color badgeBgColor;
+  final String thumbnailEmoji;
+  final Color thumbnailBgColor;
   final VoidCallback? onTap;
 
   const RecentContentCard({
@@ -17,6 +19,8 @@ class RecentContentCard extends StatelessWidget {
     required this.badgeText,
     required this.badgeTextColor,
     required this.badgeBgColor,
+    this.thumbnailEmoji = '📸',
+    this.thumbnailBgColor = AppTheme.fillLight,
     this.onTap,
   });
 
@@ -47,11 +51,11 @@ class RecentContentCard extends StatelessWidget {
               width: 74,
               height: 74,
               decoration: BoxDecoration(
-                color: AppTheme.fillLight,
+                color: thumbnailBgColor,
                 borderRadius: BorderRadius.circular(18),
               ),
               alignment: Alignment.center,
-              child: const Text('📸', style: TextStyle(fontSize: 32)),
+              child: Text(thumbnailEmoji, style: const TextStyle(fontSize: 32)),
             ),
             const SizedBox(width: 16),
             Expanded(

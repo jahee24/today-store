@@ -18,7 +18,7 @@ class AppBottomNavBar extends StatelessWidget {
         context.go('/history');
         break;
       case 3:
-        // 설정
+        context.go('/settings');
         break;
     }
   }
@@ -37,6 +37,7 @@ class AppBottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(Icons.history), label: '이력'),
         BottomNavigationBarItem(
           icon: Icon(Icons.settings_outlined),
+          activeIcon: Icon(Icons.settings_rounded),
           label: '설정',
         ),
       ],

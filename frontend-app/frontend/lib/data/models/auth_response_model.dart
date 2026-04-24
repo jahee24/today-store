@@ -10,10 +10,11 @@ class AuthResponseModel {
   });
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
+    final user = json['user'] as Map<String, dynamic>?;
     return AuthResponseModel(
       accessToken: (json['accessToken'] ?? '') as String, 
       refreshToken: (json['refreshToken'] ?? '') as String, 
-      isFirstLogin: (json['isFirstLogin'] ?? '') as bool,
+      isFirstLogin: user?['isFirstLogin'] as bool? ?? false,
     );
   }
 }

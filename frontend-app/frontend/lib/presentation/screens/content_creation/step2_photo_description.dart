@@ -57,7 +57,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
   }
 
   void _handleNext() {
-    context.go('/step3');
+    context.push('/step3');
   }
 
   @override
