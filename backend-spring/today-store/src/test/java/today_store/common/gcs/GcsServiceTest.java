@@ -139,6 +139,62 @@ class GcsServiceTest {
     }
 
     @Test
+    @DisplayName("이미지 복사 성공")
+    void shouldCopyFileInGcs() {
+        // copy 요청이 들어오면 source와 target이 올바른 CopyRequest로 구성되어야 한다.
+
+        // given
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+
+        // when
+        String copiedObjectName = gcsService.copyFile("2026/04/14/requests/sample.png", "contents");
+
+        // then
+        assertThat(copiedObjectName).matches("^" + datePath + "/contents/[0-9a-f\\-]+_sample\\.png$");
+
+        ArgumentCaptor<Storage.CopyRequest> copyRequestCaptor = ArgumentCaptor.forClass(Storage.CopyRequest.class);
+        then(storage).should().copy(copyRequestCaptor.capture());
+        assertThat(copyRequestCaptor.getValue().getSource().getBucket()).isEqualTo("test-bucket");
+        assertThat(copyRequestCaptor.getValue().getSource().getName()).isEqualTo("2026/04/14/requests/sample.png");
+        assertThat(copyRequestCaptor.getValue().getTarget().getBlobId().getBucket()).isEqualTo("test-bucket");
+        assertThat(copyRequestCaptor.getValue().getTarget().getBlobId().getName()).isEqualTo(copiedObjectName);
+    }
+
+    @Test
+    @DisplayName("이미지 복사 입력값 비어 있음")
+    void shouldReturnNullWhenCopySourceIsBlank() {
+        // source object가 비어 있으면 copy를 시도하지 않고 null을 반환해야 한다.
+
+        // when
+        String nullResult = gcsService.copyFile(null, "contents");
+        String blankResult = gcsService.copyFile("", "contents");
+
+        // then
+        assertThat(nullResult).isNull();
+        assertThat(blankResult).isNull();
+        then(storage).should(never()).copy(any(Storage.CopyRequest.class));
+    }
+
+    @Test
+    @DisplayName("이미지 복사 실패")
+    void shouldThrowWhenCopyFails() {
+        // storage.copy 실패는 표준화된 copy 예외로 감싸야 한다.
+
+        // given
+        given(storage.copy(any(Storage.CopyRequest.class))).willThrow(new RuntimeException("copy failed"));
+
+        // when
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> gcsService.copyFile("2026/04/14/requests/sample.png", "contents")
+        );
+
+        // then
+        assertThat(exception.getMessage()).isEqualTo("GCS copy failed");
+        assertThat(exception.getCause()).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
     @DisplayName("이미지 삭제 성공")
     void shouldDeleteSanitizedObjectName() {
         // objectName이 있으면 sanitize 후 storage.delete를 호출해야 한다.
