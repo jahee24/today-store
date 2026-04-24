@@ -58,7 +58,7 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
   }
 
   void _handleNext() {
-    context.go('/step4');
+    context.push('/step4');
   }
 
   @override

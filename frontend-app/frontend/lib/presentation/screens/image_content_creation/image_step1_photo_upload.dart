@@ -141,7 +141,7 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
       return;
     }
     ref.read(imageContentCreationProvider.notifier).setImages(_images);
-    context.go('/processing?mode=image');
+    context.push('/processing?mode=image');
   }
 
   void _showSnackBar(String message) {

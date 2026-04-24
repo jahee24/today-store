@@ -58,6 +58,22 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      Material(
+                        color: AppTheme.fillLight,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => context.push('/settings'),
+                          child: const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Icon(
+                              Icons.settings_outlined,
+                              color: AppTheme.textSecondary,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 22),
@@ -83,9 +99,9 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '사진만 올리면 AI가 알아서 만들어 드려요',
+                          'AI가 알아서 만들어 드려요',
                           style: textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withOpacity(0.85),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -95,7 +111,7 @@ class DashboardScreen extends StatelessWidget {
                             Expanded(
                               child: CreationActionButton(
                                 label: '+ 문구 생성',
-                                onPressed: () => context.go('/step1'),
+                                onPressed: () => context.push('/step1'),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -103,7 +119,7 @@ class DashboardScreen extends StatelessWidget {
                               child: CreationActionButton(
                                 label: '+ 이미지 생성',
                                 filled: false,
-                                onPressed: () => context.go('/image-step1'),
+                                onPressed: () => context.push('/image-step1'),
                               ),
                             ),
                           ],
@@ -152,7 +168,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          context.go('/history');
+                          context.push('/history');
                         },
                         child: const Text(
                           '전체보기',
@@ -166,20 +182,26 @@ class DashboardScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const RecentContentCard(
+                  RecentContentCard(
                     title: '시즌 딸기 라떼 홍보',
                     subtitle: '2분 전 · 감성적',
-                    badgeText: '완료',
-                    badgeTextColor: AppTheme.successText,
-                    badgeBgColor: AppTheme.successBg,
+                    badgeText: '문구',
+                    badgeTextColor: AppTheme.primaryColor,
+                    badgeBgColor: const Color(0xFFEEEAFE),
+                    thumbnailEmoji: '📸',
+                    thumbnailBgColor: AppTheme.fillLight,
+                    onTap: () => context.push('/result'),
                   ),
                   const SizedBox(height: 14),
-                  const RecentContentCard(
-                    title: '매장 인테리어 리뉴얼',
-                    subtitle: '어제 · 정보제공',
-                    badgeText: '공유됨',
-                    badgeTextColor: AppTheme.infoText,
-                    badgeBgColor: AppTheme.infoBg,
+                  RecentContentCard(
+                    title: '매장 인테리어 사진',
+                    subtitle: '어제 · 8장 생성',
+                    badgeText: '이미지',
+                    badgeTextColor: const Color(0xFF5B9B4C),
+                    badgeBgColor: const Color(0xFFEAF6E5),
+                    thumbnailEmoji: '🎨',
+                    thumbnailBgColor: const Color(0xFFE6F2F5),
+                    onTap: () => context.push('/image-result'),
                   ),
                 ],
               ),

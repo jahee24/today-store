@@ -69,10 +69,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _openItem(_HistoryItem item) {
     if (item.type == _HistoryType.image) {
-      context.go('/image-result');
+      context.push('/image-result');
       return;
     }
-    context.go('/result');
+    context.push('/result');
   }
 
   void _selectFilter(_HistoryType? type) {
