@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import today_store.authentication.entity.User;
 import today_store.authentication.repository.UserRepository;
@@ -69,7 +70,7 @@ class StoreServiceTest {
                 .longitude(new BigDecimal("126.12345678"))
                 .build();
         given(storeRepository.existsByUser(user)).willReturn(false);
-        given(storeRepository.save(any(Store.class))).willAnswer(invocation -> {
+        given(storeRepository.saveAndFlush(any(Store.class))).willAnswer(invocation -> {
             Store store = invocation.getArgument(0);
             ReflectionTestUtils.setField(store, "id", storeId);
             ReflectionTestUtils.setField(store, "createdAt", createdAt);
@@ -82,7 +83,7 @@ class StoreServiceTest {
         // then
         assertThat(response.getId()).isEqualTo(storeId);
         assertThat(response.getCreatedAt()).isEqualTo(createdAt);
-        then(storeRepository).should().save(argThat(store ->
+        then(storeRepository).should().saveAndFlush(argThat(store ->
                 store.getUser() == user
                         && store.getStoreName().equals("오늘상점")
                         && store.getBusinessType().equals("소품샵")
@@ -119,7 +120,7 @@ class StoreServiceTest {
                         .build())
                 .build();
         given(storeRepository.existsByUser(user)).willReturn(false);
-        given(storeRepository.save(any(Store.class))).willAnswer(invocation -> {
+        given(storeRepository.saveAndFlush(any(Store.class))).willAnswer(invocation -> {
             Store store = invocation.getArgument(0);
             ReflectionTestUtils.setField(store, "id", storeId);
             ReflectionTestUtils.setField(store, "createdAt", createdAt);
@@ -132,7 +133,7 @@ class StoreServiceTest {
         // then
         assertThat(response.getId()).isEqualTo(storeId);
         assertThat(response.getCreatedAt()).isEqualTo(createdAt);
-        then(storeRepository).should().save(argThat(store ->
+        then(storeRepository).should().saveAndFlush(argThat(store ->
                 store.getPreferredStyle() == PreferredStyle.FRIENDLY
                         && store.getSnsInstagram().equals("@todaycafe")
                         && store.getSnsNaverUrl().equals("https://naver.me/todaycafe")
@@ -165,7 +166,36 @@ class StoreServiceTest {
         // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.STORE_ALREADY_EXISTS);
         assertThat(exception.getMessage()).isEqualTo(ErrorCode.STORE_ALREADY_EXISTS.getMessage());
-        then(storeRepository).should(never()).save(any(Store.class));
+        then(storeRepository).should(never()).saveAndFlush(any(Store.class));
+    }
+
+    @Test
+    @DisplayName("DB 제약 조건으로 인한 중복 가게 생성 실패")
+    void shouldThrowWhenSaveAndFlushDetectsDuplicateStore() {
+        // 사전 중복 확인 이후 DB 제약 조건 위반이 발생해도 중복 생성 예외로 변환해야 한다.
+
+        // given
+        User user = createUser("user@example.com", "사장님");
+        CreateStoreRequest request = CreateStoreRequest.builder()
+                .storeName("오늘상점")
+                .businessType("소품샵")
+                .address("서울시 마포구")
+                .latitude(new BigDecimal("37.55555555"))
+                .longitude(new BigDecimal("126.12345678"))
+                .build();
+        given(storeRepository.existsByUser(user)).willReturn(false);
+        given(storeRepository.saveAndFlush(any(Store.class))).willThrow(
+                new DataIntegrityViolationException("duplicate key value violates unique constraint \"stores_user_id_key\"")
+        );
+
+        // when
+        StoreAlreadyExistException exception = assertThrows(
+                StoreAlreadyExistException.class,
+                () -> storeService.createStore(user, request)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.STORE_ALREADY_EXISTS);
     }
 
     @Test
