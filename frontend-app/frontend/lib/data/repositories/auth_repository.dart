@@ -1,5 +1,6 @@
 import '../datasources/remote/auth_api.dart';
 import '../models/auth_response_model.dart';
+import '../models/user_model.dart';
 import '../../services/token_service.dart';
 
 class AuthRepository {
@@ -63,5 +64,15 @@ class AuthRepository {
     } finally {
       await tokenService.clearTokens();
     }
+  }
+
+  Future<UserModel> getMyProfile() {
+    return authApi.getMyProfile();
+  }
+
+  Future<UserModel> updateMyProfile({
+    required String name,
+  }) {
+    return authApi.updateMyProfile(name: name);
   }
 }

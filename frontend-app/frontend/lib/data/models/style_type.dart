@@ -36,6 +36,7 @@ extension StyleTypeX on StyleType {
     switch (label) {
       case '깔끔':
       return StyleType.clean;
+      case '무난':
       case '감성적':
       return StyleType.emotional;
       case '전문성':

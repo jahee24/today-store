@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../data/models/store_model.dart';
+import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../../data/providers/store_provider.dart';
 import '../../models/address_pick_result.dart';
@@ -25,8 +27,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   double? _latitude;
   double? _longitude;
+  bool _didPrefillFromServer = false;
+  StoreProfileModel? _originalStoreProfile;
 
-  AddressPickResult? _selectedAddress;
+
 
   final List<String> businessTypes = ['음식점', '카페', '소매점', '미용', '기타'];
   final List<String> styleOptions = ['무난', '깔끔', '친근', 'meme'];
@@ -74,7 +78,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     int count = 0;
     if (_isStoreNameFilled) count++;
     if (_isBusinessTypeFilled) count++;
-    if (_isAddressFilled) count++;
+    if (_isAddressFilled && _isLocationFilled) count++;
     if (_isStyleFilled) count++;
 
     return count;
@@ -82,6 +86,36 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   bool get _canGoNext {
     return _isStoreNameFilled && _isBusinessTypeFilled && _isAddressFilled && _isLocationFilled;
+  }
+
+  void _prefillFromStore(StoreProfileModel store) {
+    if (_didPrefillFromServer) {
+      return;
+    }
+
+    _didPrefillFromServer = true;
+    _originalStoreProfile = store;
+    _storeNameController.text = store.storeName;
+    _addressController.text = store.address;
+    _latitude = store.latitude;
+    _longitude = store.longitude;
+    selectedBusinessType =
+        businessTypes.contains(store.businessType) ? store.businessType : null;
+    selectedStyle = _mapPreferredStyleToLabel(store.preferredStyle);
+    setState(() {});
+  }
+
+  String? _mapPreferredStyleToLabel(String? preferredStyle) {
+    switch (preferredStyle) {
+      case 'clean':
+        return '깔끔';
+      case 'friendly':
+        return '친근';
+      case 'emotional':
+        return '무난';
+      default:
+        return null;
+    }
   }
 
   Future<void> _handleAddressSearch() async {
@@ -92,7 +126,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (result == null) return;
 
     setState(() {
-      _selectedAddress = result;
       _addressController.text = result.displayAddress;
       _latitude = result.latitude;
       _longitude = result.longitude;
@@ -106,20 +139,105 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
     if (!_canGoNext) return;
 
-    ref.read(storeProvider.notifier).createStore(
-      storeName: _storeNameController.text, 
-      businessType: selectedBusinessType!, 
-      address: _addressController.text, 
-      latitude: _latitude!, 
+    final isEditMode = GoRouterState.of(context).uri.queryParameters['mode'] == 'edit';
+    final notifier = ref.read(storeProvider.notifier);
+    if (isEditMode) {
+      final original = _originalStoreProfile;
+      final trimmedStoreName = _storeNameController.text.trim();
+      final trimmedAddress = _addressController.text.trim();
+      final changedStoreName =
+          original != null && trimmedStoreName != original.storeName.trim()
+              ? trimmedStoreName
+              : null;
+      final changedBusinessType =
+          original != null && selectedBusinessType != original.businessType
+              ? selectedBusinessType
+              : null;
+      final changedAddress =
+          original != null && trimmedAddress != original.address.trim()
+              ? trimmedAddress
+              : null;
+      final changedLatitude = original != null && _latitude != null && _latitude != original.latitude
+          ? _latitude
+          : null;
+      final changedLongitude = original != null && _longitude != null && _longitude != original.longitude
+          ? _longitude
+          : null;
+      final currentPreferredStyleApi = _toPreferredStyleApiValue(selectedStyle);
+      final changedPreferredStyle =
+          original != null && currentPreferredStyleApi != original.preferredStyle
+              ? selectedStyle
+              : null;
+
+      final hasChanges =
+          changedStoreName != null ||
+          changedBusinessType != null ||
+          changedAddress != null ||
+          changedLatitude != null ||
+          changedLongitude != null ||
+          changedPreferredStyle != null;
+
+      if (!hasChanges) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('변경된 내용이 없어요.')));
+        return;
+      }
+
+      notifier.updateStore(
+        storeName: changedStoreName,
+        businessType: changedBusinessType,
+        address: changedAddress,
+        latitude: changedLatitude,
+        longitude: changedLongitude,
+        preferredStyleLabel: changedPreferredStyle,
+      );
+      return;
+    }
+
+    notifier.createStore(
+      storeName: _storeNameController.text,
+      businessType: selectedBusinessType!,
+      address: _addressController.text,
+      latitude: _latitude!,
       longitude: _longitude!,
       preferredStyleLabel: selectedStyle,
     );
+  }
+
+  String? _toPreferredStyleApiValue(String? styleLabel) {
+    switch (styleLabel) {
+      case '깔끔':
+        return 'clean';
+      case '친근':
+        return 'friendly';
+      case '무난':
+        return 'emotional';
+      default:
+        return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final storeState = ref.watch(storeProvider);
+    final isEditMode = GoRouterState.of(context).uri.queryParameters['mode'] == 'edit';
+    final storeProfileAsync = isEditMode ? ref.watch(currentStoreProfileProvider) : null;
+
+    if (isEditMode) {
+      storeProfileAsync!.whenData((store) {
+        if (store == null || _didPrefillFromServer) {
+          return;
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _didPrefillFromServer) {
+            return;
+          }
+          _prefillFromStore(store);
+        });
+      });
+    }
 
     ref.listen<StoreState>(storeProvider, (previous, next) {
       if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
@@ -129,6 +247,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       }
 
       if (next.createdStore != null && previous?.createdStore == null) {
+        ref.invalidate(currentStoreProfileProvider);
+        ref.invalidate(dashboardDataProvider);
+        context.go('/dashboard');
+      }
+
+      if (next.updatedStore != null && previous?.updatedStore == null) {
+        ref.invalidate(currentStoreProfileProvider);
+        ref.invalidate(dashboardDataProvider);
         context.go('/dashboard');
       }
     });
@@ -143,13 +269,23 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
+                  if (isEditMode) ...[
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.fillLight,
+                      ),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Text(
-                    '가게 등록',
-                    style: textTheme.headlineMedium?.copyWith(
+                    isEditMode ? '가게 정보 수정' : '가게 등록',
+                    style: textTheme.headlineSmall?.copyWith(
                       fontSize: 23,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
-                      letterSpacing: 0.2,
+                      letterSpacing: 0,
                     ),
                   ),
                   const Spacer(),
@@ -170,7 +306,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   const SizedBox(width: 8),
                   _buildStepBar(isActive: _isBusinessTypeFilled),
                   const SizedBox(width: 8),
-                  _buildStepBar(isActive: _isAddressFilled),
+                  _buildStepBar(isActive: _isAddressFilled && _isLocationFilled),
                   const SizedBox(width: 8),
                   _buildStepBar(isActive: _isStyleFilled),
                 ],
@@ -267,10 +403,21 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               const SizedBox(height: 20),
 
               PrimaryButton(
-                text: '다음으로',
+                text: isEditMode ? '저장' : '다음으로',
                 onPressed: storeState.isLoading ? null : _handleNext,
                 isLoading: storeState.isLoading,
               ),
+              if (isEditMode && storeProfileAsync!.isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    '기존 가게 정보를 불러오는 중이에요...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textTertiary,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 16),
             ],
           ),

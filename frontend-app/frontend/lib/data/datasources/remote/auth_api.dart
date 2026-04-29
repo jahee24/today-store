@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../models/auth_response_model.dart';
+import '../../models/user_model.dart';
 
 class AuthApi {
   final Dio dio;
@@ -18,7 +19,9 @@ class AuthApi {
       },
     );
 
-    return AuthResponseModel.fromJson(response.data);
+    print('LOGIN RESPONSE: ${response.data}');
+
+  return AuthResponseModel.fromJson(response.data);
   }
 
   Future<AuthResponseModel> refresh({
@@ -43,5 +46,22 @@ class AuthApi {
         'refreshToken': refreshToken,
       },
     );
+  }
+
+  Future<UserModel> getMyProfile() async {
+    final response = await dio.get('/api/v1/users/me');
+    return UserModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<UserModel> updateMyProfile({
+    required String name,
+  }) async {
+    final response = await dio.patch(
+      '/api/v1/users/me',
+      data: {
+        'name': name,
+      },
+    );
+    return UserModel.fromJson(response.data as Map<String, dynamic>);
   }
 }

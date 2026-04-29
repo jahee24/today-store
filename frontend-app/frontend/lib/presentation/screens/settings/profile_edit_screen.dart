@@ -1,0 +1,287 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../config/app_theme.dart';
+import '../../../data/providers/auth_provider.dart';
+import '../../widgets/buttons/primary_button.dart';
+
+class ProfileEditScreen extends ConsumerStatefulWidget {
+  const ProfileEditScreen({super.key});
+
+  @override
+  ConsumerState<ProfileEditScreen> createState() => _ProfileEditScreenState();
+}
+
+class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  bool _didPrefill = false;
+  bool _isSaving = false;
+  String _initialName = '';
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  void _prefill(String name, String email) {
+    if (_didPrefill) {
+      return;
+    }
+    _didPrefill = true;
+    _initialName = name;
+    _nameController.text = name;
+    _emailController.text = email;
+  }
+
+  Future<void> _handleSave() async {
+    if (_isSaving) {
+      return;
+    }
+
+    final trimmedName = _nameController.text.trim();
+    if (trimmedName.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이름을 입력해 주세요.')));
+      return;
+    }
+
+    if (trimmedName == _initialName.trim()) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('변경된 이름이 없어요.')));
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      final updatedUser = await authRepository.updateMyProfile(name: trimmedName);
+      _initialName = updatedUser.name;
+      _nameController.text = updatedUser.name;
+
+      ref.invalidate(currentUserProvider);
+
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('프로필 저장 중 오류가 발생했어요.')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final currentUser = ref.watch(currentUserProvider);
+
+    currentUser.whenData((user) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _prefill(
+          user.name.isNotEmpty ? user.name : '',
+          user.email.isNotEmpty ? user.email : '',
+        );
+      });
+    });
+
+    return Scaffold(
+      backgroundColor: AppTheme.surfaceColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 20),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppTheme.fillLight,
+                    ),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '프로필 수정',
+                      style: textTheme.headlineSmall?.copyWith(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Column(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF0EEFA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      size: 56,
+                      color: Color(0xFF5D4CB3),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '사진 변경',
+                    style: textTheme.titleSmall?.copyWith(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 26),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _FieldLabel('이름'),
+                      const SizedBox(height: 8),
+                      _ProfileTextField(
+                        controller: _nameController,
+                        hintText: '이름을 입력하세요',
+                      ),
+                      const SizedBox(height: 20),
+                      _FieldLabel('이메일'),
+                      const SizedBox(height: 8),
+                      _ProfileTextField(
+                        controller: _emailController,
+                        hintText: '이메일',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '이메일은 변경할 수 없습니다',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textHint,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _FieldLabel('전화번호 (선택)'),
+                      const SizedBox(height: 8),
+                      _ProfileTextField(
+                        controller: _phoneController,
+                        hintText: '010-0000-0000',
+                        keyboardType: TextInputType.phone,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              PrimaryButton(
+                text: '저장하기',
+                onPressed: _isSaving ? null : _handleSave,
+                isLoading: _isSaving,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+    );
+  }
+}
+
+class _ProfileTextField extends StatelessWidget {
+  const _ProfileTextField({
+    required this.controller,
+    required this.hintText,
+    this.readOnly = false,
+    this.keyboardType,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final bool readOnly;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      readOnly: readOnly,
+      keyboardType: keyboardType,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: AppTheme.textPrimary,
+      ),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(
+          fontSize: 18,
+          color: AppTheme.textSecondary,
+          fontWeight: FontWeight.w400,
+        ),
+        filled: true,
+        fillColor: const Color(0xFFFAFAFA),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 19),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: const BorderSide(
+            color: AppTheme.borderStrongColor,
+            width: 1.4,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: const BorderSide(
+            color: AppTheme.primaryColor,
+            width: 1.8,
+          ),
+        ),
+      ),
+    );
+  }
+}

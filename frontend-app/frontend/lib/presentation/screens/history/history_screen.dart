@@ -1,69 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../data/models/content_model.dart';
+import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/cards/recent_content_card.dart';
 import '../../widgets/inputs/search_input.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
 enum _HistoryType { text, image }
 
+final historyRequestsProvider = FutureProvider<ContentRequestsResponse>((ref) {
+  final repository = ref.read(contentRepositoryProvider);
+  return repository.getContentRequests(page: 1, size: 30);
+});
+
 class _HistoryItem {
   const _HistoryItem({
     required this.title,
     required this.meta,
-    required this.preview,
     required this.type,
   });
 
   final String title;
   final String meta;
-  final String preview;
   final _HistoryType type;
 }
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   _HistoryType? _selectedType;
   String _query = '';
 
-  static const List<_HistoryItem> _allItems = [
-    _HistoryItem(
-      title: '시즌 딸기 라떼 홍보',
-      meta: '2026.02.10 · 감성적',
-      preview: '오늘도 향기로운 하루를 선물해 드릴게요...',
-      type: _HistoryType.text,
-    ),
-    _HistoryItem(
-      title: '매장 인테리어 사진',
-      meta: '2026.02.09 · 8장 생성',
-      preview: '다양한 구도로 변환된 매장 사진',
-      type: _HistoryType.image,
-    ),
-    _HistoryItem(
-      title: '설날 특가 이벤트',
-      meta: '2026.02.07 · 친근',
-      preview: '새해 복 많이 받으세요! 설날 맞이 특별...',
-      type: _HistoryType.text,
-    ),
-  ];
+  List<_HistoryItem> _buildFilteredItems(List<ContentRequestItem> requests) {
+    final items = requests.map((request) {
+      final isImage = request.imageCount > 0;
+      final type = isImage ? _HistoryType.image : _HistoryType.text;
+      final title = request.concept.isNotEmpty ? request.concept : '제목 없음';
+      final meta = isImage
+          ? '${_formatRelative(request.createdAt)} · ${request.imageCount}장 생성'
+          : '${_formatRelative(request.createdAt)} · 문구';
+      return _HistoryItem(
+        title: title,
+        meta: meta,
+        type: type,
+      );
+    }).toList();
 
-  List<_HistoryItem> get _filteredItems {
     final normalized = _query.trim().toLowerCase();
-    return _allItems.where((item) {
+    return items.where((item) {
       if (_selectedType != null && item.type != _selectedType) {
         return false;
       }
-      if (normalized.isEmpty) return true;
+      if (normalized.isEmpty) {
+        return true;
+      }
       return item.title.toLowerCase().contains(normalized) ||
-          item.meta.toLowerCase().contains(normalized) ||
-          item.preview.toLowerCase().contains(normalized);
+          item.meta.toLowerCase().contains(normalized);
     }).toList();
   }
 
@@ -82,7 +82,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final items = _filteredItems;
+    final historyAsync = ref.watch(historyRequestsProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -128,48 +128,84 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(height: 18),
               Expanded(
-                child: items.isEmpty
-                    ? Center(
+                child: historyAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (_, __) => Center(
+                    child: Text(
+                      '콘텐츠 이력을 불러오지 못했어요.',
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: AppTheme.textTertiary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  data: (response) {
+                    final requests = response.data;
+                    final items = _buildFilteredItems(requests);
+                    if (items.isEmpty) {
+                      return Center(
                         child: Text(
-                          '검색 결과가 없어요.',
+                          requests.isEmpty ? '아직 생성된 콘텐츠가 없어요.' : '검색 결과가 없어요.',
                           style: textTheme.bodyLarge?.copyWith(
                             color: AppTheme.textTertiary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                      )
-                    : ListView.separated(
-                        itemCount: items.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 14),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          final isImage = item.type == _HistoryType.image;
-
-                          return RecentContentCard(
-                            title: item.title,
-                            subtitle: '${item.meta}\n${item.preview}',
-                            badgeText: isImage ? '이미지' : '문구',
-                            badgeTextColor: isImage
-                                ? const Color(0xFF5B9B4C)
-                                : AppTheme.primaryColor,
-                            badgeBgColor: isImage
-                                ? const Color(0xFFEAF6E5)
-                                : const Color(0xFFEEEAFE),
-                            thumbnailEmoji: isImage ? '🎨' : '📸',
-                            thumbnailBgColor: isImage
-                                ? const Color(0xFFE6F2F5)
-                                : const Color(0xFFF7ECEA),
-                            onTap: () => _openItem(item),
-                          );
-                        },
-                      ),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: items.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        final isImage = item.type == _HistoryType.image;
+                        return RecentContentCard(
+                          title: item.title,
+                          subtitle: item.meta,
+                          badgeText: isImage ? '이미지' : '문구',
+                          badgeTextColor: isImage
+                              ? const Color(0xFF5B9B4C)
+                              : AppTheme.primaryColor,
+                          badgeBgColor: isImage
+                              ? const Color(0xFFEAF6E5)
+                              : const Color(0xFFEEEAFE),
+                          thumbnailEmoji: isImage ? '🎨' : '📸',
+                          thumbnailBgColor: isImage
+                              ? const Color(0xFFE6F2F5)
+                              : const Color(0xFFF7ECEA),
+                          onTap: () => _openItem(item),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _formatRelative(DateTime? createdAt) {
+    if (createdAt == null) {
+      return '날짜 없음';
+    }
+    final now = DateTime.now();
+    final diff = now.difference(createdAt);
+    if (diff.inMinutes < 1) {
+      return '방금 전';
+    }
+    if (diff.inHours < 1) {
+      return '${diff.inMinutes}분 전';
+    }
+    if (diff.inDays < 1) {
+      return '${diff.inHours}시간 전';
+    }
+    if (diff.inDays == 1) {
+      return '어제';
+    }
+    return '${createdAt.year}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.day.toString().padLeft(2, '0')}';
   }
 }
 

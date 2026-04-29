@@ -7,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../datasources/remote/api_client.dart';
 import '../datasources/remote/auth_api.dart';
+import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
 import '../../services/token_service.dart';
 
@@ -66,6 +67,11 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(
     authRepository: ref.read(authRepositoryProvider),
   );
+});
+
+final currentUserProvider = FutureProvider<UserModel>((ref) async {
+  final authRepository = ref.read(authRepositoryProvider);
+  return authRepository.getMyProfile();
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {

@@ -12,8 +12,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    const displayName = '김재희';
-    const displayEmail = 'jahee0128@kyonggi.ac.kr';
+    final currentUser = ref.watch(currentUserProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -30,15 +29,25 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     '설정',
                     style: textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 26,
-                      letterSpacing: -0.5,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 23,
+                      letterSpacing: 0,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const _ProfileCard(
-                    name: displayName,
-                    email: displayEmail,
+                  currentUser.when(
+                    data: (user) => _ProfileCard(
+                      name: user.name.isNotEmpty ? user.name : '이름 없음',
+                      email: user.email.isNotEmpty ? user.email : '이메일 없음',
+                    ),
+                    loading: () => const _ProfileCard(
+                      name: '불러오는 중...',
+                      email: '사용자 정보를 불러오고 있어요',
+                    ),
+                    error: (_, __) => const _ProfileCard(
+                      name: '사용자 정보 불러오기 실패',
+                      email: '다시 시도해 주세요',
+                    ),
                   ),
                   const SizedBox(height: 28),
                   const _SectionLabel('계정'),
@@ -50,7 +59,7 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: const Color(0xFF6D63F6),
                         iconBg: const Color(0xFFEEEAFE),
                         title: '프로필 수정',
-                        onTap: () {},
+                        onTap: () => context.push('/profile-edit'),
                       ),
                       _SettingsTile(
                         icon: Icons.notifications_rounded,
@@ -72,27 +81,14 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: const Color(0xFF6B7280),
                         iconBg: AppTheme.fillLight,
                         title: '가게 정보 수정',
-                        onTap: () {},
-                      ),
-                      _SettingsTile(
-                        icon: Icons.palette_rounded,
-                        iconColor: const Color(0xFFEC4899),
-                        iconBg: const Color(0xFFFCE7F3),
-                        title: '기본 스타일 변경',
-                        trailingBadge: _Badge(
-                          label: '깔끔',
-                          textColor: AppTheme.primaryColor,
-                          backgroundColor: const Color(0xFFEEEAFE),
-                        ),
-                        onTap: () {},
-                        showDividerAbove: true,
+                        onTap: () => context.push('/profile-setup?mode=edit'),
                       ),
                       _SettingsTile(
                         icon: Icons.link_rounded,
                         iconColor: const Color(0xFF3B82F6),
                         iconBg: const Color(0xFFEFF6FF),
                         title: 'SNS 계정 관리',
-                        onTap: () {},
+                        onTap: () => context.push('/sns-management'),
                         showDividerAbove: true,
                       ),
                     ],

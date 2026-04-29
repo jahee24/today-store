@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 enum AppPermissionType {
   camera,
   photos,
+  location,
 }
 
 enum AppPermissionResult {
@@ -64,6 +65,10 @@ class PermissionService {
     return ensure(AppPermissionType.photos);
   }
 
+  static Future<AppPermissionResult> ensureLocation() async {
+    return ensure(AppPermissionType.location);
+  }
+
   static Permission? _mapPermission(AppPermissionType type) {
     switch (type) {
       case AppPermissionType.camera:
@@ -77,6 +82,9 @@ class PermissionService {
         return Permission.photos;
       }
       return null;
+
+      case AppPermissionType.location:
+      return Permission.locationWhenInUse;
     }
   }
 }

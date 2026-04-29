@@ -11,6 +11,8 @@ import '../presentation/screens/splash/splash_screen.dart';
 import '../presentation/screens/login/login_screen.dart';
 import '../presentation/screens/dashboard/dashboard_screen.dart';
 import '../presentation/screens/profile_setup/profile_setup_screen.dart';
+import '../presentation/screens/settings/profile_edit_screen.dart';
+import '../presentation/screens/settings/sns_management_screen.dart';
 import '../presentation/screens/content_creation/step1_photo_upload.dart';
 import '../presentation/screens/history/history_screen.dart';
 import '../presentation/screens/settings/settings_screen.dart';
@@ -33,6 +35,16 @@ final router = GoRouter(
     GoRoute(
       path: '/profile-setup',
       builder: (context, state) => const ProfileSetupScreen(),
+    ),
+
+    GoRoute(
+      path: '/profile-edit',
+      builder: (context, state) => const ProfileEditScreen(),
+    ),
+
+    GoRoute(
+      path: '/sns-management',
+      builder: (context, state) => const SnsManagementScreen(),
     ),
 
     GoRoute(

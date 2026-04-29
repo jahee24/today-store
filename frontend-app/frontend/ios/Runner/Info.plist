@@ -71,6 +71,8 @@
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>사진 업로드를 위해 앨범 접근이 필요합니다.</string>
 		<key>UIStatusBarHidden</key>
+		<key>NSLocationWhenInUseUseageDescription</key>
+		<string>현재 위치를 기준으로 가게 주소를 찾기 위해 위치 권한이 필요합니다.</string>
 		<false/>
 	</dict>
 </plist>

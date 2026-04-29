@@ -46,18 +46,17 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   void _onChanged(String value) {
     _debounce?.cancel();
 
-    // 입력 즉시 UI 갱신
+    final trimmed = value.trim();
+
     setState(() {
       _errorText = null;
     });
 
-    final trimmed = value.trim();
-
     if (trimmed.isEmpty) {
       setState(() {
         _isLoading = false;
-        _errorText = null;
         _results = [];
+        _errorText = null;
       });
       return;
     }
@@ -70,10 +69,11 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   Future<void> _search(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
+
       setState(() {
         _isLoading = false;
-        _errorText = null;
         _results = [];
+        _errorText = null;
       });
       return;
     }
@@ -97,8 +97,8 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       if (!mounted) return;
 
       setState(() {
-        _isLoading = false;
         _results = [];
+        _isLoading = false;
         _errorText = '주소 검색 중 오류가 발생했습니다.';
       });
 
@@ -131,7 +131,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   }
 
   void _clearSearch() {
+    _debounce?.cancel();
     _searchController.clear();
+
     setState(() {
       _results = [];
       _isLoading = false;
@@ -155,6 +157,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 12),
+
                 Stack(
                   alignment: Alignment.center,
                   children: [
@@ -260,6 +263,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                
                 InkWell(
                   onTap: _goToMapPicker,
                   borderRadius: BorderRadius.circular(18),
