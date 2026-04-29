@@ -21,6 +21,10 @@ import today_store.store.dto.CreateStoreRequest;
 import today_store.store.exception.StoreAlreadyExistException;
 import today_store.store.exception.StoreNotFoundException;
 import today_store.user.dto.UpdateUserProfileRequest;
+import today_store.content.content.dto.RegenerateContentRequest;
+import today_store.content.content.exception.ContentNotFoundException;
+import today_store.content.content.exception.InvalidRegenerationRequestException;
+import today_store.content.content.exception.TaskNotFoundException;
 import today_store.content.request.dto.CreateGenerationRequest;
 import today_store.content.request.dto.UpdateGenerationRequest;
 import today_store.content.request.exception.FileNameMismatchException;
@@ -399,6 +403,95 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().getMessage()).isEqualTo("Store profile not found");
     }
 
+    @Test
+    @DisplayName("재생성 요청 검증 오류를 C006 응답으로 변환")
+    void shouldResolveRegenerateContentValidationErrorCode() throws Exception {
+        // regenerateContentRequest 검증 실패는 C006 코드로 응답해야 한다.
+
+        // given
+        Method method = ValidationFixture.class.getDeclaredMethod("handleRegenerateContent", RegenerateContentRequest.class);
+        MethodParameter methodParameter = new MethodParameter(method, 0);
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(
+                RegenerateContentRequest.builder().feedback("retry").target("YOUTUBE").build(),
+                "regenerateContentRequest"
+        );
+        bindingResult.addError(new FieldError(
+                "regenerateContentRequest",
+                "target",
+                "YOUTUBE",
+                false,
+                null,
+                null,
+                "Target platform must be one of INSTAGRAM, KARROT, NAVER"
+        ));
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleMethodArgumentNotValidException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C006");
+        assertThat(response.getBody().getMessage()).isEqualTo("Empty feedback or Invalid target platform");
+        assertThat(response.getBody().getErrors()).hasSize(1);
+        assertThat(response.getBody().getErrors().get(0).getField()).isEqualTo("target");
+    }
+
+    @Test
+    @DisplayName("잘못된 재생성 요청 예외를 C006 응답으로 변환")
+    void shouldHandleInvalidRegenerationRequestException() {
+        // InvalidRegenerationRequestException은 C006 응답으로 내려가야 한다.
+
+        // given
+        InvalidRegenerationRequestException exception = new InvalidRegenerationRequestException();
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleCustomException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C006");
+        assertThat(response.getBody().getMessage()).isEqualTo("Empty feedback or Invalid target platform");
+    }
+
+    @Test
+    @DisplayName("콘텐츠 없음 예외를 C007 응답으로 변환")
+    void shouldHandleContentNotFoundException() {
+        // ContentNotFoundException은 C007 응답으로 변환되어야 한다.
+
+        // given
+        ContentNotFoundException exception = new ContentNotFoundException();
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleCustomException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C007");
+        assertThat(response.getBody().getMessage()).isEqualTo("Content not found or already deleted");
+    }
+
+    @Test
+    @DisplayName("작업 없음 예외를 G002 응답으로 변환")
+    void shouldHandleTaskNotFoundException() {
+        // TaskNotFoundException은 G002 응답으로 변환되어야 한다.
+
+        // given
+        TaskNotFoundException exception = new TaskNotFoundException();
+
+        // when
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleCustomException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("G002");
+        assertThat(response.getBody().getMessage()).isEqualTo("Task ID not found");
+    }
+
     private static class ValidationFixture {
 
         public void handle(@Valid LoginRequest loginRequest) {
@@ -414,6 +507,9 @@ class GlobalExceptionHandlerTest {
         }
 
         public void handleUpdateGeneration(@Valid UpdateGenerationRequest updateGenerationRequest) {
+        }
+
+        public void handleRegenerateContent(@Valid RegenerateContentRequest regenerateContentRequest) {
         }
 
         public void handlePageRequest(@Valid PageRequest pageRequest) {

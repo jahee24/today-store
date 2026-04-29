@@ -20,7 +20,7 @@ import '../presentation/screens/address/map_location_picker_screen.dart';
 import '../presentation/screens/address/address_search_screen.dart';
 
 final router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/dashboard',
   routes: [
     GoRoute(
       path: '/',
