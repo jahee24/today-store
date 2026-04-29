@@ -50,6 +50,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         case SplashStatus.authenticated:
           context.go('/dashboard');
           break;
+        case SplashStatus.needsProfileSetup:
+          context.go('/profile-setup');
+          break;
         case SplashStatus.unauthenticated:
           context.go('/login');
           break;

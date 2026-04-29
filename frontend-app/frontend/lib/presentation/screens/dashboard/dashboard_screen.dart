@@ -1,19 +1,23 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
+import '../../../data/models/content_model.dart';
+import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/cards/recent_content_card.dart';
 import '../../widgets/cards/stat_card.dart';
 import '../../widgets/buttons/creation_action_button.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final size = MediaQuery.of(context).size;
+    final dashboardAsync = ref.watch(dashboardDataProvider);
 
     final horizontalPadding = math.max(16.0, size.width * 0.05);
     final topPadding = math.max(16.0, size.height * 0.02);
@@ -50,7 +54,13 @@ class DashboardScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '맛있는 카페',
+                              dashboardAsync.maybeWhen(
+                                data: (data) =>
+                                    data.storeProfile?.storeName.isNotEmpty == true
+                                    ? data.storeProfile!.storeName
+                                    : '우리 가게',
+                                orElse: () => '우리 가게',
+                              ),
                               style: textTheme.headlineMedium?.copyWith(
                                 fontSize: 26,
                               ),
@@ -128,32 +138,88 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          value: '12',
-                          label: '생성한 콘텐츠',
-                          valueColor: AppTheme.primaryColor,
+                  dashboardAsync.when(
+                    data: (data) => Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            value: data.stats.totalCreated.toString(),
+                            label: '생성한 콘텐츠',
+                            valueColor: AppTheme.primaryColor,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          value: '5',
-                          label: '공유 완료',
-                          valueColor: Color(0xFF4F8B41),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            value: data.stats.totalShared.toString(),
+                            label: '공유 완료',
+                            valueColor: const Color(0xFF4F8B41),
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          value: '3',
-                          label: '이번 주',
-                          valueColor: Color(0xFFD16A31),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            value: data.stats.createdThisWeek.toString(),
+                            label: '이번 주',
+                            valueColor: const Color(0xFFD16A31),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    loading: () => const Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            value: '-',
+                            label: '생성한 콘텐츠',
+                            valueColor: AppTheme.primaryColor,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            value: '-',
+                            label: '공유 완료',
+                            valueColor: Color(0xFF4F8B41),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            value: '-',
+                            label: '이번 주',
+                            valueColor: Color(0xFFD16A31),
+                          ),
+                        ),
+                      ],
+                    ),
+                    error: (_, __) => const Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            value: '0',
+                            label: '생성한 콘텐츠',
+                            valueColor: AppTheme.primaryColor,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            value: '0',
+                            label: '공유 완료',
+                            valueColor: Color(0xFF4F8B41),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            value: '0',
+                            label: '이번 주',
+                            valueColor: Color(0xFFD16A31),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -182,26 +248,45 @@ class DashboardScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  RecentContentCard(
-                    title: '시즌 딸기 라떼 홍보',
-                    subtitle: '2분 전 · 감성적',
-                    badgeText: '문구',
-                    badgeTextColor: AppTheme.primaryColor,
-                    badgeBgColor: const Color(0xFFEEEAFE),
-                    thumbnailEmoji: '📸',
-                    thumbnailBgColor: AppTheme.fillLight,
-                    onTap: () => context.push('/result'),
-                  ),
-                  const SizedBox(height: 14),
-                  RecentContentCard(
-                    title: '매장 인테리어 사진',
-                    subtitle: '어제 · 8장 생성',
-                    badgeText: '이미지',
-                    badgeTextColor: const Color(0xFF5B9B4C),
-                    badgeBgColor: const Color(0xFFEAF6E5),
-                    thumbnailEmoji: '🎨',
-                    thumbnailBgColor: const Color(0xFFE6F2F5),
-                    onTap: () => context.push('/image-result'),
+                  dashboardAsync.when(
+                    data: (data) {
+                      if (data.recentRequests.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            '아직 생성된 콘텐츠가 없어요.',
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: AppTheme.textTertiary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: data.recentRequests.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: index == data.recentRequests.length - 1 ? 0 : 14),
+                            child: _buildRecentCard(context, item),
+                          );
+                        }).toList(),
+                      );
+                    },
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (_, __) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        '최근 콘텐츠를 불러오지 못했어요.',
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.textTertiary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -210,5 +295,40 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildRecentCard(BuildContext context, ContentRequestItem item) {
+    final isImage = item.imageCount > 0;
+    return RecentContentCard(
+      title: item.concept.isNotEmpty ? item.concept : '제목 없음',
+      subtitle: '${_formatRelative(item.createdAt)} · ${item.imageCount}장',
+      badgeText: isImage ? '이미지' : '문구',
+      badgeTextColor: isImage ? const Color(0xFF5B9B4C) : AppTheme.primaryColor,
+      badgeBgColor: isImage ? const Color(0xFFEAF6E5) : const Color(0xFFEEEAFE),
+      thumbnailEmoji: isImage ? '🎨' : '📸',
+      thumbnailBgColor: isImage ? const Color(0xFFE6F2F5) : AppTheme.fillLight,
+      onTap: () => context.push('/history'),
+    );
+  }
+
+  String _formatRelative(DateTime? createdAt) {
+    if (createdAt == null) {
+      return '날짜 없음';
+    }
+    final now = DateTime.now();
+    final diff = now.difference(createdAt);
+    if (diff.inMinutes < 1) {
+      return '방금 전';
+    }
+    if (diff.inHours < 1) {
+      return '${diff.inMinutes}분 전';
+    }
+    if (diff.inDays < 1) {
+      return '${diff.inHours}시간 전';
+    }
+    if (diff.inDays == 1) {
+      return '어제';
+    }
+    return '${createdAt.year}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.day.toString().padLeft(2, '0')}';
   }
 }

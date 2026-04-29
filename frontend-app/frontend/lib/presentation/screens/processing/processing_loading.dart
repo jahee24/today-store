@@ -1,14 +1,18 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../data/models/processing_model.dart';
+import '../../../data/providers/content_creation_provider.dart';
+import '../../../data/providers/dashboard_provider.dart';
 
 enum ProcessingMode { text, image }
 
-class ProcessingLoadingScreen extends StatefulWidget {
+class ProcessingLoadingScreen extends ConsumerStatefulWidget {
   const ProcessingLoadingScreen({
     super.key,
     this.mode = ProcessingMode.text,
@@ -17,12 +21,16 @@ class ProcessingLoadingScreen extends StatefulWidget {
   final ProcessingMode mode;
 
   @override
-  State<ProcessingLoadingScreen> createState() =>
+  ConsumerState<ProcessingLoadingScreen> createState() =>
       _ProcessingLoadingScreenState();
 }
 
-class _ProcessingLoadingScreenState extends State<ProcessingLoadingScreen> {
+class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScreen> {
   Timer? _timer;
+  String? _requestId;
+  String? _taskId;
+  int _pollTick = 0;
+  bool _isPolling = false;
 
   late ProcessingUiState uiState;
 
@@ -30,7 +38,13 @@ class _ProcessingLoadingScreenState extends State<ProcessingLoadingScreen> {
   void initState() {
     super.initState();
     uiState = _initialState();
-    _startMockProgress();
+    if (widget.mode == ProcessingMode.image) {
+      _startMockProgress();
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startTextGenerationFlow();
+    });
   }
 
   @override
@@ -118,6 +132,119 @@ class _ProcessingLoadingScreenState extends State<ProcessingLoadingScreen> {
         uiState = _buildStateByProgress(nextProgress);
       });
     });
+  }
+
+  Future<void> _startTextGenerationFlow() async {
+    try {
+      final contentState = ref.read(contentCreationProvider);
+      if (contentState.images.isEmpty) {
+        _handleGenerationFailure('업로드된 사진이 없어요. 다시 시도해 주세요.');
+        return;
+      }
+
+      final imageDescriptions = List.generate(contentState.images.length, (index) {
+        final raw =
+            index < contentState.descriptions.length ? contentState.descriptions[index] : '';
+        final trimmed = raw.trim();
+        return trimmed.isNotEmpty ? trimmed : '사진 ${index + 1}';
+      });
+      final concept = _buildConcept(contentState);
+
+      final repository = ref.read(contentRepositoryProvider);
+      final created = await repository.createContentRequest(
+        concept: concept,
+        additionalNote: contentState.extraRequest.trim().isEmpty
+            ? null
+            : contentState.extraRequest.trim(),
+        imageDescriptions: imageDescriptions,
+        imagePaths: contentState.images.map((image) => image.path).toList(),
+      );
+
+      final generated = await repository.generateContent(requestId: created.requestId);
+      _requestId = generated.requestId;
+      _taskId = generated.taskId;
+
+      await _pollTaskStatus();
+      _timer = Timer.periodic(const Duration(seconds: 2), (_) {
+        _pollTaskStatus();
+      });
+    } catch (e) {
+      _handleGenerationFailure(_extractErrorMessage(e));
+    }
+  }
+
+  Future<void> _pollTaskStatus() async {
+    final taskId = _taskId;
+    if (taskId == null || taskId.isEmpty || _isPolling) {
+      return;
+    }
+    _isPolling = true;
+    try {
+      final repository = ref.read(contentRepositoryProvider);
+      final task = await repository.getTaskStatus(apiLogId: taskId);
+
+      if (task.isSuccess) {
+        _timer?.cancel();
+        setState(() {
+          uiState = _completedState();
+        });
+        final requestId = _requestId ?? '';
+        final contentId = task.result ?? '';
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (!mounted) {
+            return;
+          }
+          context.go('/result?requestId=$requestId&contentId=$contentId');
+        });
+        return;
+      }
+
+      if (task.isError) {
+        _timer?.cancel();
+        _handleGenerationFailure(task.errorMessage ?? '콘텐츠 생성에 실패했어요.');
+        return;
+      }
+
+      _pollTick += 1;
+      final nextProgress = (_pollTick * 15) + 10;
+      setState(() {
+        uiState = _buildTextStateByProgress(nextProgress.clamp(10, 90));
+      });
+    } catch (e) {
+      _timer?.cancel();
+      _handleGenerationFailure(_extractErrorMessage(e));
+    } finally {
+      _isPolling = false;
+    }
+  }
+
+  String _buildConcept(ContentCreationState state) {
+    final style = state.selectedStyle?.trim();
+    if (style != null && style.isNotEmpty) {
+      return style.length > 120 ? style.substring(0, 120) : style;
+    }
+    return '감성적';
+  }
+
+  void _handleGenerationFailure(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    context.go('/step4');
+  }
+
+  String _extractErrorMessage(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final message = data['message']?.toString();
+        if (message != null && message.trim().isNotEmpty) {
+          return message;
+        }
+      }
+    }
+    return '콘텐츠 생성 중 문제가 발생했어요.';
   }
 
   ProcessingUiState _completedState() {

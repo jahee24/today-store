@@ -1,10 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../config/app_theme.dart';
+import '../buttons/creation_action_button.dart';
+
 class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
 
   const AppBottomNavBar({super.key, required this.currentIndex});
+
+  Future<void> _showCreateOptions(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryColor, AppTheme.infoText],
+                ),
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '새 홍보 콘텐츠 만들기',
+                    style: TextStyle(
+                      color: AppTheme.textOnPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 23,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'AI가 알아서 만들어 드려요',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.85),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 17,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CreationActionButton(
+                          label: '+ 문구 생성',
+                          onPressed: () {
+                            Navigator.of(sheetContext).pop();
+                            context.push('/step1');
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CreationActionButton(
+                          label: '+ 이미지 생성',
+                          filled: false,
+                          onPressed: () {
+                            Navigator.of(sheetContext).pop();
+                            context.push('/image-step1');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   void _handleTap(BuildContext context, int index) {
     switch (index) {
@@ -12,7 +88,7 @@ class AppBottomNavBar extends StatelessWidget {
         context.go('/dashboard');
         break;
       case 1:
-        context.go('/step1');
+        _showCreateOptions(context);
         break;
       case 2:
         context.go('/history');

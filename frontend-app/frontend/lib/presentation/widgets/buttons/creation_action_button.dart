@@ -52,6 +52,7 @@ class CreationActionButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
           side: const BorderSide(color: Colors.white, width: 1.6),
           shape: RoundedRectangleBorder(

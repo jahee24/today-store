@@ -40,4 +40,35 @@ class StoreRepository {
 
     return storeApi.createStore(request);
   }
+
+  Future<StoreProfileModel> getMyStore() {
+    return storeApi.getMyStore();
+  }
+
+  Future<StoreUpdateResponse> updateMyStore({
+    String? storeName,
+    String? businessType,
+    String? address,
+    double? latitude,
+    double? longitude,
+    String? preferredStyleLabel,
+    String? instagram,
+    String? naver,
+    String? karrot,
+  }) {
+    final styleType = StyleTypeX.fromLabel(preferredStyleLabel);
+    final request = StoreUpdateRequest(
+      storeName: storeName,
+      businessType: businessType,
+      address: address,
+      latitude: latitude,
+      longitude: longitude,
+      preferredStyle: styleType?.apiValue,
+      snsInstagram: instagram,
+      snsNaver: naver,
+      snsKarrot: karrot,
+    );
+
+    return storeApi.updateMyStore(request);
+  }
 }
