@@ -40,6 +40,7 @@ import today_store.common.gemini.dto.GeminiParsedResponse;
 import today_store.common.gemini.dto.GeminiPromptRequest;
 import today_store.common.gemini.dto.GeminiRegenerationRequest;
 import today_store.common.gemini.service.GeminiService;
+import today_store.common.runcomfy.service.RunComfyService;
 import today_store.content.content.dto.ContentListResponse;
 import today_store.content.content.dto.ContentResponse;
 import today_store.content.content.dto.GenerateContentResponse;
@@ -55,10 +56,7 @@ import today_store.content.content.entity.PublishStatus;
 import today_store.content.content.exception.ContentNotFoundException;
 import today_store.content.content.exception.InvalidRegenerationRequestException;
 import today_store.content.content.exception.TaskNotFoundException;
-import today_store.content.content.repository.ApiLogRepository;
-import today_store.content.content.repository.ContentImageRepository;
-import today_store.content.content.repository.ContentPostRepository;
-import today_store.content.content.repository.ContentRepository;
+import today_store.content.content.repository.*;
 import today_store.content.request.entity.GenerationRequest;
 import today_store.content.request.entity.InputImage;
 import today_store.content.request.exception.GenerationRequestNotFoundException;
@@ -108,6 +106,12 @@ class ContentServiceTest {
     @Mock
     private GeminiConfig geminiConfig;
 
+    @Mock
+    private RunComfyService runComfyService;
+
+    @Mock
+    private InputImageVariationRepository inputImageVariationRepository;
+
     private ContentService contentService;
     private TestableContentService testableContentService;
 
@@ -126,10 +130,12 @@ class ContentServiceTest {
                 apiLogRepository,
                 requestRepository,
                 inputImageRepository,
+                inputImageVariationRepository,
                 storeRepository,
                 userRepository,
                 contentPostRepository,
                 geminiService,
+                runComfyService,
                 gcsService,
                 transactionTemplate,
                 geminiConfig
@@ -141,10 +147,12 @@ class ContentServiceTest {
                 apiLogRepository,
                 requestRepository,
                 inputImageRepository,
+                inputImageVariationRepository,
                 storeRepository,
                 userRepository,
                 contentPostRepository,
                 geminiService,
+                runComfyService,
                 gcsService,
                 transactionTemplate,
                 geminiConfig
@@ -1199,10 +1207,12 @@ class ContentServiceTest {
                 ApiLogRepository apiLogRepository,
                 GenerationRequestRepository requestRepository,
                 InputImageRepository inputImageRepository,
+                InputImageVariationRepository inputImageVariationRepository,
                 StoreRepository storeRepository,
                 UserRepository userRepository,
                 ContentPostRepository contentPostRepository,
                 GeminiService geminiService,
+                RunComfyService runComfyService,
                 GcsService gcsService,
                 TransactionTemplate transactionTemplate,
                 GeminiConfig geminiConfig
@@ -1213,10 +1223,12 @@ class ContentServiceTest {
                     apiLogRepository,
                     requestRepository,
                     inputImageRepository,
+                    inputImageVariationRepository,
                     storeRepository,
                     userRepository,
                     contentPostRepository,
                     geminiService,
+                    runComfyService,
                     gcsService,
                     transactionTemplate,
                     geminiConfig

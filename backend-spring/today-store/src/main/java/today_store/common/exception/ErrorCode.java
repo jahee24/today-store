@@ -36,6 +36,7 @@ public enum ErrorCode {
     INVALID_REGENERATION_REQUEST(HttpStatus.BAD_REQUEST, "C006", "Empty feedback or Invalid target platform"),
     CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "C007", "Content not found or already deleted"),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "C008", "Post history not found"),
+    EMPTY_CONTENT_IMAGES(HttpStatus.BAD_REQUEST, "C009", "Content must have at least one image."),
 
     // Generation Task
     GENERATION_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "G001", "Generation task is already in progress or completed"),
@@ -50,6 +51,7 @@ public enum ErrorCode {
     // AI / Gemini
     AI_RESPONSE_EMPTY(HttpStatus.INTERNAL_SERVER_ERROR, "AI001", "Gemini returned empty response"),
     AI_PARSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI002", "Failed to parse AI response"),
+    AI_IMAGE_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI004", "Failed to process or store AI generated image"),
 
     // Instagram
     INSTAGRAM_INVALID_AUTH_CODE(HttpStatus.BAD_REQUEST, "I001", "Invalid or expired authorization code"),
