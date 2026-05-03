@@ -162,6 +162,52 @@ class AuthenticationServiceTest {
     }
 
     @Test
+    @DisplayName("OAuth 이메일 누락 시 대체 이메일 생성")
+    void shouldCreateFallbackEmailWhenOauthProviderDoesNotReturnEmail() {
+        // Kakao처럼 이메일을 내려주지 않는 OAuth 제공자라도 로그인은 실패하지 않고
+        // providerId/provider 조합의 대체 이메일로 사용자를 저장해야 한다.
+
+        // given
+        authenticationService = createService(createWebClient(
+                jsonResponse(HttpStatus.OK, """
+                        {"id":12345,"properties":{"nickname":"Kakao User","profile_image":"https://image.test/kakao.png"},"kakao_account":{}}
+                        """)
+        ));
+        ClientRegistration clientRegistration = createKakaoClientRegistration();
+        UUID savedUserId = UUID.randomUUID();
+        LoginRequest loginRequest = new LoginRequest("kakao", "valid-kakao-token");
+
+        given(clientRegistrationRepository.findByRegistrationId("kakao")).willReturn(clientRegistration);
+        given(userRepository.findByProviderAndProviderId("kakao", "12345")).willReturn(Optional.empty());
+        given(userRepository.save(any(User.class))).willAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            ReflectionTestUtils.setField(user, "id", savedUserId);
+            return user;
+        });
+        given(jwtTokenProvider.createAccessToken(any(Authentication.class))).willReturn("access-token");
+        given(jwtTokenProvider.createRefreshToken(any(Authentication.class))).willReturn("refresh-token");
+
+        // when
+        LoginResponse response = authenticationService.oauthLogin(loginRequest);
+
+        // then
+        assertThat(response.getUser().getId()).isEqualTo(savedUserId);
+        assertThat(response.getUser().getEmail()).isEqualTo("12345@kakao.com");
+        assertThat(response.getUser().getName()).isEqualTo("Kakao User");
+        assertThat(response.getUser().isFirstLogin()).isTrue();
+        then(userRepository).should().save(argThat(user ->
+                user.getEmail().equals("12345@kakao.com")
+                        && user.getProvider().equals("kakao")
+                        && user.getProviderId().equals("12345")
+                        && user.getProfileImageUrl().equals("https://image.test/kakao.png")
+        ));
+        then(refreshTokenRepository).should().save(argThat(token ->
+                token.getUserId().equals(savedUserId)
+                        && token.getRefreshToken().equals("refresh-token")
+        ));
+    }
+
+    @Test
     @DisplayName("지원하지 않는 소셜 제공자 거부")
     void shouldThrowUnsupportedProviderExceptionWhenProviderIsUnsupported() {
         // 등록되지 않은 OAuth 제공자로 로그인하면 지원하지 않는 제공자 예외를 반환해야 한다.
@@ -494,6 +540,21 @@ class AuthenticationServiceTest {
                 .userInfoUri("https://example.test/user/me")
                 .userNameAttributeName("sub")
                 .clientName("Google")
+                .build();
+    }
+
+    private ClientRegistration createKakaoClientRegistration() {
+        return ClientRegistration.withRegistrationId("kakao")
+                .clientId("kakao-client-id")
+                .clientSecret("kakao-client-secret")
+                .redirectUri("http://localhost/test/oauth/kakao")
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .scope("profile_nickname", "account_email")
+                .authorizationUri("https://kauth.kakao.com/oauth/authorize")
+                .tokenUri("https://kauth.kakao.com/oauth/token")
+                .userInfoUri("https://kapi.kakao.com/v2/user/me")
+                .userNameAttributeName("id")
+                .clientName("Kakao")
                 .build();
     }
 
