@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../data/models/content_model.dart';
+import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 import '../../widgets/buttons/primary_button.dart';
 
-class ResultViewScreen extends StatelessWidget {
+class ResultViewScreen extends ConsumerWidget {
   const ResultViewScreen({super.key});
 
   void _handleBack(BuildContext context) {
@@ -16,230 +19,379 @@ class ResultViewScreen extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+  String _headlineFromBody(String body) {
+    final first = body.split('\n').map((e) => e.trim()).firstWhere(
+          (e) => e.isNotEmpty,
+          orElse: () => '',
+        );
+    if (first.isEmpty) return '생성된 문구';
+    if (first.length <= 80) return first;
+    return '${first.substring(0, 80)}…';
+  }
 
-    // 실제 결과 데이터로 교체
-    const selectedStyle = '감성적';
-    const styleLabel = '감성적 스타일';
-    const titleText = '오늘도 향기로운 하루를 선물해 드릴게요 ☕';
-    const bodyText =
-        '딸기가 한가득 올라간 시즌 한정 라떼, 지금 맛보지 않으면 후회할걸요? 🍓✨\n\n달콤한 딸기와 부드러운 우유의 완벽한 하모니';
-    const hashtags =
-        '#딸기라떼 #카페추천 #시즌한정 #맛있는카페 #오늘의메뉴 #카페스타그램';
+  String _generationLabel(String type) {
+    switch (type.toUpperCase()) {
+      case 'ALL':
+        return '전체 채널';
+      case 'INSTAGRAM_ONLY':
+        return '인스타그램';
+      default:
+        return type.isEmpty ? '생성 결과' : type;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final contentId = GoRouterState.of(context).uri.queryParameters['contentId'] ?? '';
+
+    if (contentId.trim().isEmpty) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BackArrowButton(onTap: () => _handleBack(context)),
+                const SizedBox(height: 24),
+                Text(
+                  '콘텐츠를 불러올 수 없어요',
+                  style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'contentId가 없습니다. 생성이 완료된 뒤 다시 열어주세요.',
+                  style: textTheme.bodyLarge?.copyWith(color: AppTheme.textTertiary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final async = ref.watch(contentDetailProvider(contentId));
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  BackArrowButton(
-                    onTap: () => _handleBack(context),
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    '생성 결과',
-                    style: textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Text(
-                      '수정',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+          child: async.when(
+            loading: () => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BackArrowButton(onTap: () => _handleBack(context)),
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F0FF),
-                  borderRadius: BorderRadius.circular(14),
+              ],
+            ),
+            error: (e, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BackArrowButton(onTap: () => _handleBack(context)),
+                const SizedBox(height: 24),
+                Text(
+                  '결과를 불러오지 못했어요',
+                  style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
-                child: Text(
-                  '💜 $styleLabel',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryColor,
-                  ),
+                const SizedBox(height: 8),
+                Text(
+                  e.toString(),
+                  style: textTheme.bodyMedium?.copyWith(color: AppTheme.textTertiary),
                 ),
-              ),
-
-              const SizedBox(height: 14),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F2FF),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text(
-                  '✨ $selectedStyle 스타일로 생성된 결과',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppTheme.borderColor),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppTheme.shadowColor,
-                          blurRadius: 12,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(24),
-                          ),
-                          child: Container(
-                            height: 260,
-                            width: double.infinity,
-                            color: const Color(0xFFF4E3E3),
-                            child: const Center(
-                              child: Text(
-                                '📸',
-                                style: TextStyle(fontSize: 54),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                titleText,
-                                style: textTheme.headlineSmall?.copyWith(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.textPrimary,
-                                  height: 1.45,
-                                ),
-                              ),
-
-                              const SizedBox(height: 26),
-
-                              Text(
-                                bodyText,
-                                style: textTheme.bodyLarge?.copyWith(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.textSecondary,
-                                  height: 1.75,
-                                ),
-                              ),
-
-                              const SizedBox(height: 24),
-                              const Divider(color: AppTheme.dividerColor),
-                              const SizedBox(height: 18),
-
-                              Text(
-                                hashtags,
-                                style: textTheme.bodyLarge?.copyWith(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.primaryColor,
-                                  height: 1.7,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: SizedBox(
-                      height: 68,
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: AppTheme.primaryColor,
-                            width: 2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          backgroundColor: AppTheme.surfaceColor,
-                        ),
-                        child: Text(
-                          '재생성',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    flex: 6,
-                    child: PrimaryButton(
-                      text: '공유하기 →',
-                      onPressed: () {},
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
+            data: (detail) => _ResultBody(
+              detail: detail,
+              textTheme: textTheme,
+              onBack: () => _handleBack(context),
+              headlineFromBody: _headlineFromBody,
+              generationLabel: _generationLabel,
+              onShare: () {
+                final id = contentId.trim();
+                final path = id.isEmpty
+                    ? '/share'
+                    : '/share?contentId=${Uri.encodeComponent(id)}';
+                context.push(path);
+              },
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ResultBody extends StatelessWidget {
+  const _ResultBody({
+    required this.detail,
+    required this.textTheme,
+    required this.onBack,
+    required this.headlineFromBody,
+    required this.generationLabel,
+    required this.onShare,
+  });
+
+  final ContentDetail detail;
+  final TextTheme textTheme;
+  final VoidCallback onBack;
+  final String Function(String) headlineFromBody;
+  final String Function(String) generationLabel;
+  final VoidCallback onShare;
+
+  @override
+  Widget build(BuildContext context) {
+    final ig = detail.contentData.instagram;
+    final titleText = headlineFromBody(ig.text);
+    final bodyText = ig.text.trim().isEmpty ? '본문이 없어요.' : ig.text;
+    final hashtags = ig.hashtagsLine;
+    final heroUrl = detail.images.isNotEmpty ? detail.images.first.url : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            BackArrowButton(onTap: onBack),
+            const SizedBox(width: 14),
+            Text(
+              '생성 결과',
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {},
+              child: Text(
+                '수정',
+                style: textTheme.titleMedium?.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2F0FF),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            '✨ ${generationLabel(detail.generationType)}',
+            style: textTheme.titleMedium?.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppTheme.borderColor),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppTheme.shadowColor,
+                    blurRadius: 12,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    child: SizedBox(
+                      height: 260,
+                      width: double.infinity,
+                      child: heroUrl.isNotEmpty
+                          ? Image.network(
+                              heroUrl,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(child: CircularProgressIndicator());
+                              },
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: const Color(0xFFF4E3E3),
+                                child: const Center(
+                                  child: Text('📸', style: TextStyle(fontSize: 54)),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              color: const Color(0xFFF4E3E3),
+                              child: const Center(
+                                child: Text('📸', style: TextStyle(fontSize: 54)),
+                              ),
+                            ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          titleText,
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 26),
+                        Text(
+                          bodyText,
+                          style: textTheme.bodyLarge?.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondary,
+                            height: 1.75,
+                          ),
+                        ),
+                        if (hashtags.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          const Divider(color: AppTheme.dividerColor),
+                          const SizedBox(height: 18),
+                          Text(
+                            hashtags,
+                            style: textTheme.bodyLarge?.copyWith(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.primaryColor,
+                              height: 1.7,
+                            ),
+                          ),
+                        ],
+                        _PlatformExtra(
+                          label: '당근',
+                          text: detail.contentData.karrot.text,
+                          tags: detail.contentData.karrot.hashtagsLine,
+                          textTheme: textTheme,
+                        ),
+                        _PlatformExtra(
+                          label: '네이버',
+                          text: detail.contentData.naver.text,
+                          tags: detail.contentData.naver.hashtagsLine,
+                          textTheme: textTheme,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: SizedBox(
+                height: 68,
+                child: OutlinedButton(
+                  onPressed: () {},
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    backgroundColor: AppTheme.surfaceColor,
+                  ),
+                  child: Text(
+                    '재생성',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              flex: 6,
+              child: PrimaryButton(
+                text: '공유하기 →',
+                onPressed: onShare,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PlatformExtra extends StatelessWidget {
+  const _PlatformExtra({
+    required this.label,
+    required this.text,
+    required this.tags,
+    required this.textTheme,
+  });
+
+  final String label;
+  final String text;
+  final String tags;
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.trim().isEmpty && tags.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        Text(
+          label,
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (text.trim().isNotEmpty)
+          Text(
+            text,
+            style: textTheme.bodyLarge?.copyWith(
+              height: 1.6,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        if (tags.trim().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            tags,
+            style: textTheme.bodyMedium?.copyWith(
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

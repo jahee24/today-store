@@ -50,4 +50,10 @@ class ContentRepository {
   }) {
     return contentApi.getTaskStatus(apiLogId: apiLogId);
   }
+
+  Future<ContentDetail> getContent({
+    required String contentId,
+  }) {
+    return contentApi.getContent(contentId: contentId);
+  }
 }

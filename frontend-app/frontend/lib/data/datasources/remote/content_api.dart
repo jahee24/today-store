@@ -75,4 +75,11 @@ class ContentApi {
     final response = await dio.get('/api/v1/contents/task/$apiLogId');
     return ContentTaskResponse.fromJson(response.data as Map<String, dynamic>);
   }
+
+  Future<ContentDetail> getContent({
+    required String contentId,
+  }) async {
+    final response = await dio.get('/api/v1/contents/$contentId');
+    return ContentDetail.fromJson(response.data as Map<String, dynamic>);
+  }
 }
