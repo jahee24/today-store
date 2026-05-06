@@ -5,6 +5,7 @@ import 'package:fronted/presentation/screens/image_content_creation/image_step1_
 import 'package:fronted/presentation/screens/processing/processing_loading.dart';
 import 'package:fronted/presentation/screens/result_view/image_result_view.dart';
 import 'package:fronted/presentation/screens/result_view/result_view.dart';
+import 'package:fronted/presentation/screens/share_deeplinks/share_options_screen.dart';
 import 'package:go_router/go_router.dart';
 
 import '../presentation/screens/splash/splash_screen.dart';
@@ -20,7 +21,8 @@ import '../presentation/screens/address/map_location_picker_screen.dart';
 import '../presentation/screens/address/address_search_screen.dart';
 
 final router = GoRouter(
-  initialLocation: '/dashboard',
+  initialLocation: '/',
+  
   routes: [
     GoRoute(
       path: '/',
@@ -106,6 +108,11 @@ final router = GoRouter(
     GoRoute(
       path: '/image-result',
       builder: (context, state) => const ImageResultViewScreen(),
+    ),
+
+    GoRoute(
+      path: '/share',
+      builder: (context, state) => const ShareOptionsScreen(),
     ),
 
     GoRoute(

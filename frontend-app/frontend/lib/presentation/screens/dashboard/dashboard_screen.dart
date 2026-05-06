@@ -4,11 +4,39 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../data/models/content_model.dart';
+import '../../../data/models/store_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
+import '../../../data/providers/store_provider.dart';
 import '../../widgets/cards/recent_content_card.dart';
 import '../../widgets/cards/stat_card.dart';
 import '../../widgets/buttons/creation_action_button.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+
+String _dashboardStoreTitle(
+  AsyncValue<StoreProfileModel?> storeProfileAsync,
+  AsyncValue<DashboardData> dashboardAsync,
+) {
+  String fromModel(StoreProfileModel? p) {
+    final n = p?.storeName.trim() ?? '';
+    return n.isNotEmpty ? n : '';
+  }
+
+  final fromStore = storeProfileAsync.maybeWhen(
+    data: fromModel,
+    orElse: () => '',
+  );
+  if (fromStore.isNotEmpty) {
+    return fromStore;
+  }
+
+  return dashboardAsync.maybeWhen(
+    data: (d) {
+      final n = fromModel(d.storeProfile);
+      return n.isNotEmpty ? n : '우리 가게';
+    },
+    orElse: () => '우리 가게',
+  );
+}
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -18,6 +46,7 @@ class DashboardScreen extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final size = MediaQuery.of(context).size;
     final dashboardAsync = ref.watch(dashboardDataProvider);
+    final storeProfileAsync = ref.watch(currentStoreProfileProvider);
 
     final horizontalPadding = math.max(16.0, size.width * 0.05);
     final topPadding = math.max(16.0, size.height * 0.02);
@@ -54,12 +83,9 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              dashboardAsync.maybeWhen(
-                                data: (data) =>
-                                    data.storeProfile?.storeName.isNotEmpty == true
-                                    ? data.storeProfile!.storeName
-                                    : '우리 가게',
-                                orElse: () => '우리 가게',
+                              _dashboardStoreTitle(
+                                storeProfileAsync,
+                                dashboardAsync,
                               ),
                               style: textTheme.headlineMedium?.copyWith(
                                 fontSize: 26,

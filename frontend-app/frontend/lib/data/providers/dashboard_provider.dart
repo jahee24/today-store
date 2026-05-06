@@ -51,6 +51,16 @@ final contentRepositoryProvider = Provider<ContentRepository>((ref) {
   return ContentRepository(contentApi: contentApi);
 });
 
+final contentDetailProvider =
+    FutureProvider.autoDispose.family<ContentDetail, String>((ref, contentId) async {
+  final trimmed = contentId.trim();
+  if (trimmed.isEmpty) {
+    throw Exception('콘텐츠 ID가 없어요.');
+  }
+  final repository = ref.read(contentRepositoryProvider);
+  return repository.getContent(contentId: trimmed);
+});
+
 final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
   final contentRepository = ref.read(contentRepositoryProvider);
   final storeRepository = ref.read(storeRepositoryProvider);
@@ -62,7 +72,22 @@ final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
     storeProfile = null;
   }
 
-  final requestsResponse = await contentRepository.getContentRequests(page: 1, size: 30);
+  ContentRequestsResponse requestsResponse;
+  try {
+    requestsResponse = await contentRepository.getContentRequests(page: 1, size: 30);
+  } catch (_) {
+    requestsResponse = ContentRequestsResponse(
+      data: const [],
+      pagination: ContentRequestsPagination(
+        currentPage: 1,
+        pageSize: 30,
+        totalCount: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrevious: false,
+      ),
+    );
+  }
   final requests = requestsResponse.data;
 
   final now = DateTime.now();
@@ -83,16 +108,11 @@ final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
 
   int totalShared = 0;
   final idsToCheck = requests.take(10).map((e) => e.requestId).where((e) => e.isNotEmpty).toList();
-  if (idsToCheck.isNotEmpty) {
-    final responses = await Future.wait(
-      idsToCheck.map(
-        (id) => contentRepository.getRequestContents(requestId: id),
-      ),
-      eagerError: false,
-    );
-    for (final res in responses) {
+  for (final id in idsToCheck) {
+    try {
+      final res = await contentRepository.getRequestContents(requestId: id);
       totalShared += res.contents.where((item) => item.isPosted).length;
-    }
+    } catch (_) {}
   }
 
   return DashboardData(

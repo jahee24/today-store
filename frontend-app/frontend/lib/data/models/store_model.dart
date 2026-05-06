@@ -180,7 +180,7 @@ class StoreProfileModel {
     final snsJson = json['sns'] as Map<String, dynamic>?;
     return StoreProfileModel(
       id: (json['id'] ?? '').toString(),
-      storeName: (json['storeName'] ?? '').toString(),
+      storeName: (json['storeName'] ?? json['store_name'] ?? '').toString(),
       businessType: (json['businessType'] ?? '').toString(),
       address: (json['address'] ?? '').toString(),
       latitude: _asDouble(json['latitude']) ?? 0,
