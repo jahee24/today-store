@@ -29,6 +29,7 @@ ext {
 	set('springCloudVersion', "2025.0.1")
 	set('jackson-bom.version', "2.21.1")
 	set('tomcat.version', "10.1.54")
+	set('postgresql.version', "42.7.11")
 }
 
 dependencies {
