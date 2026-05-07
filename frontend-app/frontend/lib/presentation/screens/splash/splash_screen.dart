@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import 'splash_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _fadeAnim;
   late final Animation<double> _scaleAnim;
+  SplashStatus? _lastHandledStatus;
 
   @override
   void initState() {
@@ -44,6 +46,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   // Async 상태에 따라 라우팅
   void _handleStatus(SplashStatus status) {
+    if (status == SplashStatus.loading) {
+      return;
+    }
+    if (_lastHandledStatus == status) {
+      return;
+    }
+    _lastHandledStatus = status;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       switch (status) {
@@ -64,12 +73,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<SplashStatus>> (splashProvider, (_, next) {
-      next.whenData(_handleStatus);
-    });
+    final splashState = ref.watch(splashProvider);
+    splashState.when(
+      data: _handleStatus,
+      loading: () {},
+      error: (_, __) => _handleStatus(SplashStatus.unauthenticated),
+    );
 
     final size = MediaQuery.of(context).size;
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return Scaffold(
       body: Container(
@@ -89,23 +103,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   child: Column(
                     children: [
                       Container(
-                        width: 126,
-                        height: 126,
+                        width: h(118),
+                        height: h(118),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.14),
-                          borderRadius: BorderRadius.circular(28),
+                          borderRadius: BorderRadius.circular(h(24)),
                         ),
-                        child: const Center(
-                          child: Text('🏪', style: TextStyle(fontSize: 60)),
+                        child: Center(
+                          child: Text('🏪', style: TextStyle(fontSize: f(56))),
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      SizedBox(height: h(24)),
 
                       Text(
                         '오늘의 가게',
                         style: textTheme.headlineLarge?.copyWith(
-                          fontSize: 36,
+                          fontSize: f(36),
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: -0.8,
@@ -113,12 +127,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 18),
+                      SizedBox(height: h(14)),
 
                       Text(
                         '소상공인 맞춤형 AI 홍보 비서',
                         style: textTheme.bodyLarge?.copyWith(
-                          fontSize: 18,
+                          fontSize: f(18),
                           color: Colors.white.withOpacity(0.85),
                           fontWeight: FontWeight.w400,
                           letterSpacing: -0.1,
@@ -134,10 +148,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
               // 스피너
               Padding(
-                padding: const EdgeInsets.only(bottom: 90),
+                padding: EdgeInsets.only(bottom: h(76)),
                 child: SizedBox(
-                  width: 44,
-                  height: 44,
+                  width: h(40),
+                  height: h(40),
                   child: CircularProgressIndicator(
                     strokeWidth: 4,
                     valueColor: AlwaysStoppedAnimation<Color>(

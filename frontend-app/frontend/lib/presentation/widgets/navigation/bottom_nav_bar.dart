@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../buttons/creation_action_button.dart';
 
 class AppBottomNavBar extends StatelessWidget {
@@ -15,40 +16,42 @@ class AppBottomNavBar extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (sheetContext) {
+        final h = (double v) => AppLayout.h(sheetContext, v);
+        final f = (double v) => AppLayout.f(sheetContext, v);
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: EdgeInsets.fromLTRB(h(14), 0, h(14), h(14)),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(h(20)),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [AppTheme.primaryColor, AppTheme.infoText],
                 ),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(h(24)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '새 홍보 콘텐츠 만들기',
                     style: TextStyle(
                       color: AppTheme.textOnPrimary,
                       fontWeight: FontWeight.w700,
-                      fontSize: 23,
+                      fontSize: f(23),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: h(4)),
                   Text(
                     'AI가 알아서 만들어 드려요',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.85),
                       fontWeight: FontWeight.w500,
-                      fontSize: 17,
+                      fontSize: f(17),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: h(14)),
                   Row(
                     children: [
                       Expanded(
@@ -60,7 +63,7 @@ class AppBottomNavBar extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: h(10)),
                       Expanded(
                         child: CreationActionButton(
                           label: '+ 이미지 생성',

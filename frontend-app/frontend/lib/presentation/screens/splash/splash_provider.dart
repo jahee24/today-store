@@ -20,17 +20,26 @@ class SplashNotifier extends AsyncNotifier<SplashStatus> {
     await Future.delayed(const Duration(milliseconds: 1800));
 
     final authRepository = ref.read(authRepositoryProvider);
-    final isAuthenticated = await authRepository.tryAutoLogin();
+    final bool isAuthenticated;
+    try {
+      isAuthenticated = await authRepository.tryAutoLogin();
+    } catch (_) {
+      return SplashStatus.unauthenticated;
+    }
 
     if (!isAuthenticated) {
       return SplashStatus.unauthenticated;
     }
 
-    final storeProfile = await ref.read(currentStoreProfileProvider.future);
-    if (storeProfile == null) {
-      return SplashStatus.needsProfileSetup;
+    try {
+      final storeProfile = await ref.read(currentStoreProfileProvider.future);
+      if (storeProfile == null) {
+        return SplashStatus.needsProfileSetup;
+      }
+      return SplashStatus.authenticated;
+    } catch (_) {
+      // Store profile fetch failure should not block app entry.
+      return SplashStatus.authenticated;
     }
-
-    return SplashStatus.authenticated;
   }
 }

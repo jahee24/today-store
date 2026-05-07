@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/providers/content_creation_provider.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 import '../../widgets/buttons/primary_button.dart';
@@ -28,6 +29,8 @@ class Step4PreviewGenerate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     final contentState = ref.watch(contentCreationProvider);
 
     final images = contentState.images;
@@ -45,14 +48,14 @@ class Step4PreviewGenerate extends ConsumerWidget {
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
+          padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(18)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   BackArrowButton(onTap: () => _handleBack(context)),
-                  const SizedBox(width: 14),
+                  SizedBox(width: h(12)),
                   Text(
                     '콘텐츠 만들기',
                     style: textTheme.headlineSmall?.copyWith(
@@ -62,11 +65,11 @@ class Step4PreviewGenerate extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: h(22)),
 
               const StepIndicatorLine(currentStep: 4, totalSteps: 4),
 
-              const SizedBox(height: 34),
+              SizedBox(height: h(28)),
               
               Text(
                 '모든 준비가 완료됐어요!',
@@ -75,7 +78,7 @@ class Step4PreviewGenerate extends ConsumerWidget {
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: h(8)),
               Text(
                 '설정을 확인하고 생성을 시작하세요',
                 style: textTheme.bodyLarge?.copyWith(
@@ -84,7 +87,7 @@ class Step4PreviewGenerate extends ConsumerWidget {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: h(20)),
 
               Expanded(
                 child: SingleChildScrollView(
@@ -98,7 +101,7 @@ class Step4PreviewGenerate extends ConsumerWidget {
                         styleEmoji: styleMeta.emoji,
                         extraRequest: extraRequest,
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: h(14)),
 
                       _CreditNoticeCard(
                         remainingCreditText: '남은 크레딧: 4회 (Free 플랜)',
@@ -108,23 +111,23 @@ class Step4PreviewGenerate extends ConsumerWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: h(18)),
 
               PrimaryButton(
                 text: 'AI 콘텐츠 생성하기',
-                prefixIcon: const Text(
+                prefixIcon: Text(
                   '✨',
-                  style: TextStyle(fontSize: 22),
+                  style: TextStyle(fontSize: f(22)),
                 ),
                 onPressed: images.isEmpty ? null : () => _handleGenerate(context),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: h(12)),
 
               Center(
                 child: Text(
                   '생성에는 약 30초~1분이 소요됩니다',
                   style: textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
+                    fontSize: f(14),
                     color: AppTheme.textTertiary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -158,12 +161,14 @@ class _PreviewSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(h(22)),
         border: Border.all(color: AppTheme.borderColor),
         boxShadow: const [
           BoxShadow(
@@ -178,7 +183,7 @@ class _PreviewSummaryCard extends StatelessWidget {
           ClipRRect(
             borderRadius: const BorderRadiusGeometry.vertical(top: Radius.circular(24)),
             child: SizedBox(
-              height: 180,
+              height: h(170),
             child: Row(
               children: [
                 Expanded(
@@ -199,7 +204,7 @@ class _PreviewSummaryCard extends StatelessWidget {
       ),
 
       Padding(
-        padding: const EdgeInsets.fromLTRB(22, 16, 22, 22),
+        padding: EdgeInsets.fromLTRB(h(18), h(14), h(18), h(18)),
         child: Column(
           children: [
             _SummaryRow(
@@ -207,22 +212,22 @@ class _PreviewSummaryCard extends StatelessWidget {
               valueWidget: Text(
                 '${imageCount}장',
                 style: textTheme.titleLarge?.copyWith(
-                  fontSize: 18,
+                  fontSize: f(18),
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: h(12)),
             const Divider(height: 1, color: AppTheme.dividerColor),
-            const SizedBox(height: 14),
+            SizedBox(height: h(12)),
 
             _SummaryRow(
               label: '사진 설명',
               valueWidget: Text(
                 isDescriptionComplete ? '입력 완료 ✓' : '입력 미완료',
                 style: textTheme.titleMedium?.copyWith(
-                  fontSize: 16,
+                  fontSize: f(16),
                   fontWeight: FontWeight.w700,
                   color: isDescriptionComplete
                   ? AppTheme.successText
@@ -230,52 +235,52 @@ class _PreviewSummaryCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: h(12)),
             const Divider(height: 1, color: AppTheme.dividerColor),
-            const SizedBox(height: 14),
+            SizedBox(height: h(12)),
 
             _SummaryRow(
               label: '스타일',
               valueWidget: Text(
                 '$styleEmoji $styleLabel',
                 style: textTheme.titleMedium?.copyWith(
-                  fontSize: 16,
+                  fontSize: f(16),
                   fontWeight: FontWeight.w700,
                   color: AppTheme.primaryColor,
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: h(12)),
             const Divider(height: 1, color: AppTheme.dividerColor),
-            const SizedBox(height: 14),
+            SizedBox(height: h(12)),
 
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 '추가 요청사항',
                 style: textTheme.titleMedium?.copyWith(
-                  fontSize: 16,
+                  fontSize: f(16),
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textSecondary,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: h(10)),
 
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 16,
+              padding: EdgeInsets.symmetric(
+                horizontal: h(14),
+                vertical: h(14),
               ),
               decoration: BoxDecoration(
                 color: AppTheme.fillLighter,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(h(14)),
               ),
               child: Text(
                 extraRequest.isEmpty ? '없음' : extraRequest,
                 style: textTheme.bodyLarge?.copyWith(
-                  fontSize: 16,
+                  fontSize: f(16),
                   color: extraRequest.isEmpty
                   ? AppTheme.textTertiary
                   : AppTheme.textSecondary,
@@ -303,6 +308,7 @@ class _PreviewImageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
     return Container(
       color: fallbackColor,
       child: Center(
@@ -311,14 +317,14 @@ class _PreviewImageTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 child: Image.file(
                   File(imagePath!),
-                  width: 84,
-                  height: 84,
+                  width: h(80),
+                  height: h(80),
                   fit: BoxFit.cover,
                 ),
               )
-            : const Text(
+            : Text(
                 '📷',
-                style: TextStyle(fontSize: 46),
+                style: TextStyle(fontSize: AppLayout.f(context, 42)),
               ),
       ),
     );
@@ -343,7 +349,7 @@ class _SummaryRow extends StatelessWidget {
         Text(
           label,
           style: textTheme.titleMedium?.copyWith(
-            fontSize: 16,
+            fontSize: AppLayout.f(context, 16),
             fontWeight: FontWeight.w600,
             color: AppTheme.textSecondary,
           ),
@@ -365,16 +371,18 @@ class _CreditNoticeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 22,
-        vertical: 20,
+      padding: EdgeInsets.symmetric(
+        horizontal: h(18),
+        vertical: h(16),
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEA),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(h(18)),
         border: Border.all(
           color: const Color(0xFFE8D85E),
           width: 1.5,
@@ -387,7 +395,7 @@ class _CreditNoticeCard extends StatelessWidget {
             '✨',
             style: TextStyle(fontSize: 28),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: h(12)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,16 +403,16 @@ class _CreditNoticeCard extends StatelessWidget {
                 Text(
                   '크레딧 1회 차감',
                   style: textTheme.titleLarge?.copyWith(
-                    fontSize: 18,
+                    fontSize: f(18),
                     fontWeight: FontWeight.w700,
                     color: AppTheme.warningText,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: h(6)),
                 Text(
                   remainingCreditText,
                   style: textTheme.bodyLarge?.copyWith(
-                    fontSize: 15,
+                    fontSize: f(15),
                     color: AppTheme.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),

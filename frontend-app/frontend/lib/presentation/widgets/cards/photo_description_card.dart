@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import 'content_base_card.dart';
 
 class PhotoDescriptionCard extends StatelessWidget {
@@ -22,12 +23,14 @@ class PhotoDescriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     return ContentBaseCard(
       imageSlot: Container(
-        width: 92,
-        height: 92,
+        width: h(84),
+        height: h(84),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(h(16)),
           color: AppTheme.fillLight,
           image: DecorationImage(
             image: FileImage(File(imagePath)),
@@ -41,12 +44,12 @@ class PhotoDescriptionCard extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontSize: 15,
+              fontSize: f(15),
               fontWeight: FontWeight.w700,
               color: AppTheme.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: h(8)),
           TextField(
             controller: controller,
             maxLines: 2,
@@ -66,19 +69,19 @@ class PhotoDescriptionCard extends StatelessWidget {
               ),
               filled: true,
               fillColor: AppTheme.surfaceColor,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 16,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: h(14),
+                vertical: h(14),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(h(16)),
                 borderSide: const BorderSide(
                   color:AppTheme.borderStrongColor,
                   width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(h(16)),
                 borderSide: const BorderSide(
                   color: AppTheme.primaryColor,
                   width: 1.6,

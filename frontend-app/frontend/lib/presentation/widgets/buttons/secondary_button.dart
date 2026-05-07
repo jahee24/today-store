@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/constants.dart';
 
 // 재생성 버튼
 class SecondaryButton extends StatelessWidget {
@@ -17,9 +18,11 @@ class SecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final adaptiveHeight = AppLayout.h(context, height);
+    final adaptiveFontSize = AppLayout.f(context, 18);
     return SizedBox(
       width: double.infinity,
-      height: height,
+      height: adaptiveHeight,
       child: OutlinedButton(
         onPressed: onPressed,
         child: Row(
@@ -27,7 +30,10 @@ class SecondaryButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (prefixIcon != null) ...[prefixIcon!, const SizedBox(width: 8)],
-            Text(text),
+            Text(
+              text,
+              style: TextStyle(fontSize: adaptiveFontSize),
+            ),
           ],
         ),
       ),

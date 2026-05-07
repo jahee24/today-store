@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 
 class StepIndicatorLine extends StatelessWidget {
   final int currentStep;
@@ -26,6 +27,7 @@ class StepIndicatorLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
     return Center(
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -33,17 +35,17 @@ class StepIndicatorLine extends StatelessWidget {
         children: List.generate(totalSteps * 2 - 1, (index) {
           if (index.isEven) {
             final step = (index ~/ 2) + 1;
-            return _buildDot(step);
+            return _buildDot(step, h);
           } else {
             final lineIndex = (index ~/ 2) + 1;
-            return _buildLine(lineIndex);
+            return _buildLine(lineIndex, h);
           }
         }),
       ),
     );
   }
 
-  Widget _buildDot(int step) {
+  Widget _buildDot(int step, double Function(double) h) {
     final bool isCompleted = step < currentStep;
     final bool isCurrent = step == currentStep;
 
@@ -62,8 +64,8 @@ class StepIndicatorLine extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
-      width: size,
-      height: size,
+      width: h(size),
+      height: h(size),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
@@ -71,15 +73,15 @@ class StepIndicatorLine extends StatelessWidget {
     );
   }
 
-  Widget _buildLine(int lineIndex) {
+  Widget _buildLine(int lineIndex, double Function(double) h) {
     final bool isCompletedLine = lineIndex < currentStep;
     final bool isActiveTransitionLine = lineIndex == currentStep - 1;
 
     if (isCompletedLine) {
       return Container(
-        width: lineWidth,
-        height: lineHeight,
-        margin: const EdgeInsets.symmetric(horizontal: 2),
+        width: h(lineWidth),
+        height: h(lineHeight),
+        margin: EdgeInsets.symmetric(horizontal: h(2)),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: AppTheme.successText,
@@ -89,9 +91,9 @@ class StepIndicatorLine extends StatelessWidget {
 
     if (isActiveTransitionLine) {
       return Container(
-        width: lineWidth,
-        height: lineHeight,
-        margin: const EdgeInsets.symmetric(horizontal: 2),
+        width: h(lineWidth),
+        height: h(lineHeight),
+        margin: EdgeInsets.symmetric(horizontal: h(2)),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           gradient: LinearGradient(
@@ -109,9 +111,9 @@ class StepIndicatorLine extends StatelessWidget {
     }
 
     return Container(
-      width: lineWidth,
-      height: lineHeight,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
+      width: h(lineWidth),
+      height: h(lineHeight),
+      margin: EdgeInsets.symmetric(horizontal: h(2)),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         color: AppTheme.borderColor,

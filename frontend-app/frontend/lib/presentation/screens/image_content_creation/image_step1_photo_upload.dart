@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/providers/image_content_creation_provider.dart';
 import '../../../services/image_service.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
@@ -174,19 +175,21 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    const horizontalPadding = 24.0;
-    const uploadBoxHeight = 270.0;
-    const thumbnailSize = 104.0;
+    final horizontalPadding = AppLayout.h(context, 20);
+    final uploadBoxHeight = AppLayout.h(context, 250);
+    final thumbnailSize = AppLayout.h(context, 96);
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             horizontalPadding,
-            18,
+            h(16),
             horizontalPadding,
-            20,
+            h(18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,7 +197,7 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
               Row(
                 children: [
                   BackArrowButton(onTap: _handleBack),
-                  const SizedBox(width: 14),
+                  SizedBox(width: h(12)),
                   Text(
                     '이미지 콘텐츠 만들기',
                     style: textTheme.headlineSmall?.copyWith(
@@ -204,9 +207,9 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: h(22)),
               const StepIndicatorLine(currentStep: 1, totalSteps: 2),
-              const SizedBox(height: 34),
+              SizedBox(height: h(28)),
               Text(
                 '매장 사진을 올려주세요',
                 style: textTheme.headlineMedium?.copyWith(
@@ -214,7 +217,7 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: h(8)),
               Text(
                 '최대 $_maxImages장까지 업로드할 수 있어요',
                 style: textTheme.bodyLarge?.copyWith(
@@ -222,15 +225,15 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: h(20)),
               SizedBox(
                 height: uploadBoxHeight,
                 child: DottedLinedCard(onTap: _openSourceSheet),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: h(14)),
               Wrap(
-                spacing: 12,
-                runSpacing: 12,
+                spacing: h(10),
+                runSpacing: h(10),
                 children: [
                   ...List.generate(_images.length, (index) {
                     return _ImageThumbnailCard(
@@ -246,7 +249,7 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: h(10)),
               Text(
                 '${_images.length}/$_maxImages장 업로드됨',
                 style: textTheme.bodyLarge?.copyWith(
@@ -257,7 +260,7 @@ class _ImageStep1PhotoUploadState extends ConsumerState<ImageStep1PhotoUpload> {
               const Spacer(),
               PrimaryButton(
                 text: '생성 시작 →',
-                fontSize: 21,
+                fontSize: f(21),
                 onPressed: _images.isEmpty ? null : _handleNext,
               ),
             ],

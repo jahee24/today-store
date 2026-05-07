@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/providers/content_creation_provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../services/image_service.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/cards/dotted_lined_card.dart';
@@ -191,20 +192,19 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
-    const double horizontalPadding = 24;
-    const double uploadBoxHeight = 270;
-    const double thumbnailSize = 104;
+    final horizontalPadding = AppLayout.h(context, 20);
+    final uploadBoxHeight = AppLayout.h(context, 250);
+    final thumbnailSize = AppLayout.h(context, 96);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             horizontalPadding,
-            18,
+            AppLayout.h(context, 16),
             horizontalPadding,
-            20,
+            AppLayout.h(context, 18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,11 +222,11 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: AppLayout.h(context, 22)),
 
               const StepIndicatorLine(currentStep: 1, totalSteps: 4),
 
-              const SizedBox(height: 34),
+              SizedBox(height: AppLayout.h(context, 28)),
 
               Text(
                 '사진을 올려주세요',
@@ -235,7 +235,7 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppLayout.h(context, 8)),
               Text(
                 '최대 5장까지 업로드할 수 있어요',
                 style: textTheme.bodyLarge?.copyWith(
@@ -244,7 +244,7 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: AppLayout.h(context, 20)),
 
               SizedBox(
                 height: uploadBoxHeight,
@@ -253,11 +253,11 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                 ),
               ),
 
-              const SizedBox(height: 18),
+              SizedBox(height: AppLayout.h(context, 14)),
 
               Wrap(
-                spacing: 12,
-                runSpacing: 12,
+                spacing: AppLayout.h(context, 10),
+                runSpacing: AppLayout.h(context, 10),
                 children: [
                   ...List.generate(_images.length, (index) {
                     return _ImageThumbnailCard(
@@ -274,7 +274,7 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              SizedBox(height: AppLayout.h(context, 10)),
 
               Text(
                 '${_images.length}/$_maxImages장 업로드됨',
@@ -288,7 +288,7 @@ class _Step1PhotoUploadState extends ConsumerState<Step1PhotoUpload> {
 
               PrimaryButton(
                 text: '다음 →',
-                fontSize: 21,
+                fontSize: AppLayout.f(context, 21),
                 onPressed: _images.isEmpty ? null : _handleNext,
               ),
             ],

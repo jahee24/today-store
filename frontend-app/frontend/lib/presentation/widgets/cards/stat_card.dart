@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
+import '../../../../config/constants.dart';
 
 // 홈 옵션 카드
 class StatCard extends StatelessWidget {
@@ -17,16 +18,18 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return Container(
-      width: 132,
-      padding: const EdgeInsets.symmetric(
-        vertical: 24,
-        horizontal: 18,
+      width: h(124),
+      padding: EdgeInsets.symmetric(
+        vertical: h(20),
+        horizontal: h(14),
       ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(h(20)),
         border: Border.all(color: AppTheme.borderColor),
         boxShadow: [
           BoxShadow(
@@ -42,15 +45,15 @@ class StatCard extends StatelessWidget {
           Text(
             value,
             style: textTheme.headlineMedium?.copyWith(
-              fontSize: 32,
+              fontSize: f(32),
               color: valueColor,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: h(6)),
           Text(
             label,
             style: textTheme.bodyMedium?.copyWith(
-              fontSize: 15,
+              fontSize: f(15),
               color: AppTheme.textTertiary,
               fontWeight: FontWeight.w500,
             ),

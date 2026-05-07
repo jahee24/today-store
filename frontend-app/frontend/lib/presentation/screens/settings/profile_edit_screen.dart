@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../widgets/buttons/primary_button.dart';
 
@@ -93,6 +94,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     final currentUser = ref.watch(currentUserProvider);
 
     currentUser.whenData((user) {
@@ -111,7 +114,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       backgroundColor: AppTheme.surfaceColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 20),
+          padding: EdgeInsets.fromLTRB(h(20), h(14), h(20), h(18)),
           child: Column(
             children: [
               Row(
@@ -123,12 +126,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     ),
                     icon: const Icon(Icons.arrow_back_rounded),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: h(8)),
                   Expanded(
                     child: Text(
                       '프로필 수정',
                       style: textTheme.headlineSmall?.copyWith(
-                        fontSize: 23,
+                        fontSize: f(23),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0,
                         color: AppTheme.textPrimary,
@@ -137,23 +140,23 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
+              SizedBox(height: h(20)),
               Column(
                 children: [
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: h(92),
+                    height: h(92),
                     decoration: const BoxDecoration(
                       color: Color(0xFFF0EEFA),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.person_rounded,
-                      size: 56,
+                      size: h(52),
                       color: Color(0xFF5D4CB3),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: h(8)),
                   Text(
                     '사진 변경',
                     style: textTheme.titleSmall?.copyWith(
@@ -163,36 +166,36 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: h(22)),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _FieldLabel('이름'),
-                      const SizedBox(height: 8),
+                      SizedBox(height: h(8)),
                       _ProfileTextField(
                         controller: _nameController,
                         hintText: '이름을 입력하세요',
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: h(16)),
                       _FieldLabel('이메일'),
-                      const SizedBox(height: 8),
+                      SizedBox(height: h(8)),
                       _ProfileTextField(
                         controller: _emailController,
                         hintText: '이메일',
                         readOnly: true,
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: h(6)),
                       Text(
                         '이메일은 변경할 수 없습니다',
                         style: textTheme.bodySmall?.copyWith(
                           color: AppTheme.textHint,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: h(16)),
                       _FieldLabel('전화번호 (선택)'),
-                      const SizedBox(height: 8),
+                      SizedBox(height: h(8)),
                       _ProfileTextField(
                         controller: _phoneController,
                         hintText: '010-0000-0000',
@@ -202,7 +205,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: h(8)),
               PrimaryButton(
                 text: '저장하기',
                 onPressed: _isSaving ? null : _handleSave,
@@ -248,6 +251,7 @@ class _ProfileTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
     return TextField(
       controller: controller,
       readOnly: readOnly,
@@ -266,16 +270,16 @@ class _ProfileTextField extends StatelessWidget {
         ),
         filled: true,
         fillColor: const Color(0xFFFAFAFA),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 19),
+        contentPadding: EdgeInsets.symmetric(horizontal: h(16), vertical: h(16)),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(h(18)),
           borderSide: const BorderSide(
             color: AppTheme.borderStrongColor,
             width: 1.4,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(h(18)),
           borderSide: const BorderSide(
             color: AppTheme.primaryColor,
             width: 1.8,

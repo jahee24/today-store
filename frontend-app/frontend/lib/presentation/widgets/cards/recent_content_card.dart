@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
+import '../../../../config/constants.dart';
 
 // 히스토리 목록 카드
 class RecentContentCard extends StatelessWidget {
@@ -27,15 +28,17 @@ class RecentContentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(h(22)),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(h(16)),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(h(22)),
           border: Border.all(color: AppTheme.borderColor),
           boxShadow: [
             BoxShadow(
@@ -48,16 +51,16 @@ class RecentContentCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 74,
-              height: 74,
+              width: h(68),
+              height: h(68),
               decoration: BoxDecoration(
                 color: thumbnailBgColor,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(h(16)),
               ),
               alignment: Alignment.center,
-              child: Text(thumbnailEmoji, style: const TextStyle(fontSize: 32)),
+              child: Text(thumbnailEmoji, style: TextStyle(fontSize: f(30))),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: h(12)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,11 +72,11 @@ class RecentContentCard extends StatelessWidget {
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: h(2)),
                   Text(
                     subtitle,
                     style: textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
+                      fontSize: f(14),
                       color: AppTheme.textTertiary,
                       fontWeight: FontWeight.w500,
                     ),
@@ -82,15 +85,15 @@ class RecentContentCard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              padding: EdgeInsets.symmetric(horizontal: h(10), vertical: h(6)),
               decoration: BoxDecoration(
                 color: badgeBgColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(h(10)),
               ),
               child: Text(
                 badgeText,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: f(14),
                   fontWeight: FontWeight.w600,
                   color: badgeTextColor,
                 ),

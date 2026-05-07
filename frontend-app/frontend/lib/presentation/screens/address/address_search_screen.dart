@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
-import '../../../data/datasources/remote/kakao_local_api.dart';
+import '../../../data/datasources/remote/naver_local_api.dart';
 import '../../models/address_pick_result.dart';
 import '../../models/address_search_item.dart';
 
@@ -20,7 +20,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  late final KakaoLocalApi _kakaoLocalApi;
+  late final NaverLocalApi _naverLocalApi;
 
   Timer? _debounce;
   bool _isLoading = false;
@@ -30,8 +30,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   @override
   void initState() {
     super.initState();
-    _kakaoLocalApi = KakaoLocalApi(
-      restApiKey: AppKeys.kakaoRestApiKey,
+    _naverLocalApi = NaverLocalApi(
+      clientId: AppKeys.naverMapClientId,
+      clientSecret: AppKeys.naverMapClientSecret,
     );
   }
 
@@ -84,7 +85,12 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     });
 
     try {
-      final result = await _kakaoLocalApi.searchAddress(trimmed);
+      if (AppKeys.naverMapClientId.isEmpty ||
+          AppKeys.naverMapClientSecret.isEmpty) {
+        throw Exception('Naver API key is missing');
+      }
+
+      final result = await _naverLocalApi.searchAddress(trimmed);
 
       if (!mounted) return;
 
@@ -96,10 +102,20 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     } catch (e) {
       if (!mounted) return;
 
+      var message = '주소 검색 중 오류가 발생했습니다.';
+      final raw = e.toString();
+      if (raw.contains('401')) {
+        message = '네이버 지도 인증에 실패했습니다. API 키를 확인해주세요.';
+      } else if (raw.contains('429')) {
+        message = '주소 검색 요청이 많습니다. 잠시 후 다시 시도해주세요.';
+      } else if (raw.contains('Naver API key is missing')) {
+        message = '네이버 지도 API 키가 설정되지 않았습니다.';
+      }
+
       setState(() {
         _results = [];
         _isLoading = false;
-        _errorText = '주소 검색 중 오류가 발생했습니다.';
+        _errorText = message;
       });
 
       debugPrint('주소 검색 에러: $e');
@@ -143,6 +159,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
     final hasText = _searchController.text.trim().isNotEmpty;
     final showGuide = !hasText && !_isLoading && _results.isEmpty;
 
@@ -152,11 +169,11 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
         child: GestureDetector(
           onTap: () => _searchFocusNode.unfocus(),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: h(20)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 12),
+                SizedBox(height: h(10)),
 
                 Stack(
                   alignment: Alignment.center,
@@ -184,7 +201,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 40),
+                SizedBox(height: h(30)),
                 const Text(
                   '가게 주소를\n검색해주세요',
                   style: TextStyle(
@@ -194,7 +211,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                     height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: h(22)),
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F1F5),
@@ -262,7 +279,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: h(14)),
                 
                 InkWell(
                   onTap: _goToMapPicker,
@@ -299,7 +316,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 26),
+                SizedBox(height: h(20)),
                 if (showGuide) ...[
                   const Text(
                     '이렇게 검색해 보세요',
@@ -309,7 +326,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       color: AppTheme.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: h(8)),
                   const Text(
                     '• 도로명 + 건물번호 (위례성대로 2)\n'
                     '• 건물명 + 번지 (방이동 44-2)\n'

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/models/content_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
@@ -43,6 +44,7 @@ class ResultViewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
     final contentId = GoRouterState.of(context).uri.queryParameters['contentId'] ?? '';
 
     if (contentId.trim().isEmpty) {
@@ -50,12 +52,12 @@ class ResultViewScreen extends ConsumerWidget {
         backgroundColor: AppTheme.backgroundColor,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(h(20)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 BackArrowButton(onTap: () => _handleBack(context)),
-                const SizedBox(height: 24),
+                SizedBox(height: h(20)),
                 Text(
                   '콘텐츠를 불러올 수 없어요',
                   style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -78,7 +80,7 @@ class ResultViewScreen extends ConsumerWidget {
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+          padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(20)),
           child: async.when(
             loading: () => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +95,7 @@ class ResultViewScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 BackArrowButton(onTap: () => _handleBack(context)),
-                const SizedBox(height: 24),
+                SizedBox(height: h(20)),
                 Text(
                   '결과를 불러오지 못했어요',
                   style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -145,6 +147,8 @@ class _ResultBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     final ig = detail.contentData.instagram;
     final titleText = headlineFromBody(ig.text);
     final bodyText = ig.text.trim().isEmpty ? '본문이 없어요.' : ig.text;
@@ -157,7 +161,7 @@ class _ResultBody extends StatelessWidget {
         Row(
           children: [
             BackArrowButton(onTap: onBack),
-            const SizedBox(width: 14),
+            SizedBox(width: h(12)),
             Text(
               '생성 결과',
               style: textTheme.headlineSmall?.copyWith(
@@ -179,9 +183,9 @@ class _ResultBody extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: h(18)),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: h(12), vertical: h(9)),
           decoration: BoxDecoration(
             color: const Color(0xFFF2F0FF),
             borderRadius: BorderRadius.circular(14),
@@ -189,13 +193,13 @@ class _ResultBody extends StatelessWidget {
           child: Text(
             '✨ ${generationLabel(detail.generationType)}',
             style: textTheme.titleMedium?.copyWith(
-              fontSize: 16,
+              fontSize: f(16),
               fontWeight: FontWeight.w700,
               color: AppTheme.primaryColor,
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: h(12)),
         Expanded(
           child: SingleChildScrollView(
             child: Container(
@@ -218,7 +222,7 @@ class _ResultBody extends StatelessWidget {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                     child: SizedBox(
-                      height: 260,
+                      height: h(240),
                       width: double.infinity,
                       child: heroUrl.isNotEmpty
                           ? Image.network(
@@ -244,37 +248,37 @@ class _ResultBody extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+                    padding: EdgeInsets.fromLTRB(h(20), h(22), h(20), h(20)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           titleText,
                           style: textTheme.headlineSmall?.copyWith(
-                            fontSize: 22,
+                            fontSize: f(22),
                             fontWeight: FontWeight.w700,
                             color: AppTheme.textPrimary,
                             height: 1.45,
                           ),
                         ),
-                        const SizedBox(height: 26),
+                        SizedBox(height: h(22)),
                         Text(
                           bodyText,
                           style: textTheme.bodyLarge?.copyWith(
-                            fontSize: 18,
+                            fontSize: f(18),
                             fontWeight: FontWeight.w500,
                             color: AppTheme.textSecondary,
                             height: 1.75,
                           ),
                         ),
                         if (hashtags.isNotEmpty) ...[
-                          const SizedBox(height: 24),
+                          SizedBox(height: h(20)),
                           const Divider(color: AppTheme.dividerColor),
                           const SizedBox(height: 18),
                           Text(
                             hashtags,
                             style: textTheme.bodyLarge?.copyWith(
-                              fontSize: 17,
+                              fontSize: f(17),
                               fontWeight: FontWeight.w500,
                               color: AppTheme.primaryColor,
                               height: 1.7,
@@ -301,13 +305,13 @@ class _ResultBody extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: h(16)),
         Row(
           children: [
             Expanded(
               flex: 3,
               child: SizedBox(
-                height: 68,
+                height: h(62),
                 child: OutlinedButton(
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(
@@ -320,7 +324,7 @@ class _ResultBody extends StatelessWidget {
                   child: Text(
                     '재생성',
                     style: textTheme.titleMedium?.copyWith(
-                      fontSize: 18,
+                      fontSize: f(18),
                       fontWeight: FontWeight.w700,
                       color: AppTheme.primaryColor,
                     ),
@@ -328,7 +332,7 @@ class _ResultBody extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: h(12)),
             Expanded(
               flex: 6,
               child: PrimaryButton(

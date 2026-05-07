@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
@@ -12,6 +13,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     final currentUser = ref.watch(currentUserProvider);
 
     return Scaffold(
@@ -19,7 +22,7 @@ class SettingsScreen extends ConsumerWidget {
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          padding: EdgeInsets.fromLTRB(h(18), h(14), h(18), h(24)),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
@@ -30,11 +33,11 @@ class SettingsScreen extends ConsumerWidget {
                     '설정',
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      fontSize: 23,
+                      fontSize: f(23),
                       letterSpacing: 0,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: h(18)),
                   currentUser.when(
                     data: (user) => _ProfileCard(
                       name: user.name.isNotEmpty ? user.name : '이름 없음',
@@ -49,9 +52,9 @@ class SettingsScreen extends ConsumerWidget {
                       email: '다시 시도해 주세요',
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  SizedBox(height: h(24)),
                   const _SectionLabel('계정'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: h(8)),
                   _SettingsCard(
                     children: [
                       _SettingsTile(
@@ -71,9 +74,9 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: h(20)),
                   const _SectionLabel('가게'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: h(8)),
                   _SettingsCard(
                     children: [
                       _SettingsTile(
@@ -93,9 +96,9 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: h(20)),
                   const _SectionLabel('구독'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: h(8)),
                   _SettingsCard(
                     children: [
                       _SettingsTile(
@@ -120,7 +123,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 28),
+                  SizedBox(height: h(24)),
                   Center(
                     child: TextButton(
                       onPressed: () async {

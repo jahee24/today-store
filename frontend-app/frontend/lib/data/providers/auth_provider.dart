@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide AuthApi;
@@ -81,6 +82,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required this.authRepository,
   }) : super(const AuthState(status: AuthStatus.initial));
 
+  String _buildAuthErrorMessage(Object error) {
+    if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final message = data['message']?.toString().trim();
+        if (message != null && message.isNotEmpty) {
+          return statusCode != null ? '[$statusCode] $message' : message;
+        }
+      }
+      if (statusCode == 500) {
+        return '서버 내부 오류(500)가 발생했어요. 잠시 후 다시 시도해 주세요.';
+      }
+      return statusCode != null
+          ? '로그인 요청이 실패했어요. (HTTP $statusCode)'
+          : '로그인 요청 중 네트워크 오류가 발생했어요.';
+    }
+
+    return '로그인 처리 중 오류가 발생했어요.';
+  }
+
   Future<void> loginWithGoogle() async {
     // iOS는 GoogleService-Info.plist 설정 전까지 네이티브 크래시 방지
     if (Platform.isIOS) {
@@ -131,7 +153,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        errorMessage: e.toString(),
+        errorMessage: _buildAuthErrorMessage(e),
       );
     }
   }
@@ -165,7 +187,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        errorMessage: e.toString(),
+        errorMessage: _buildAuthErrorMessage(e),
       );
     }
   }

@@ -6,6 +6,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 import 'config/routes.dart';
 import 'config/app_theme.dart';
+import 'config/constants.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -14,7 +15,7 @@ Future<void> main() async {
   );
 
   await FlutterNaverMap().init(
-    clientId: '7zwkzmxezo',
+    clientId: AppKeys.naverMapClientId,
     onAuthFailed: (ex) {
       debugPrint('네이버 지도 인증 실패: $ex');
     },
@@ -36,6 +37,36 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: router,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final baseTextScale = AppLayout.textScale(context);
+        final deviceScale =
+            (mediaQuery.size.width / AppLayout.designWidth).clamp(0.85, 1.0);
+        final responsiveTextScale =
+            (baseTextScale * deviceScale).clamp(0.9, 1.05);
+
+        final effectiveChild = child ?? const SizedBox.shrink();
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(responsiveTextScale),
+          ),
+          child: ColoredBox(
+            color: AppTheme.backgroundColor,
+            child: Transform.scale(
+              scale: deviceScale,
+              alignment: Alignment.topCenter,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: mediaQuery.size.width / deviceScale,
+                  height: mediaQuery.size.height / deviceScale,
+                  child: effectiveChild,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
