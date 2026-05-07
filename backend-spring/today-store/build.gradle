@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.13'
+	id 'org.springframework.boot' version '3.5.14'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -15,6 +15,10 @@ java {
 }
 
 configurations {
+	configureEach {
+		exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+	}
+
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
@@ -29,6 +33,7 @@ ext {
 	set('springCloudVersion', "2025.0.1")
 	set('jackson-bom.version', "2.21.1")
 	set('tomcat.version', "10.1.54")
+	set('netty.version', "4.1.133.Final")
 	set('postgresql.version', "42.7.11")
 }
 
