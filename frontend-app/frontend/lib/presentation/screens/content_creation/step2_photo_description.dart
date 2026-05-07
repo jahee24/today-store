@@ -60,11 +60,24 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
     context.push('/step3');
   }
 
+  bool _everyPhotoHasDescription(int imageCount, List<String> descriptions) {
+    if (imageCount == 0) return false;
+    for (var i = 0; i < imageCount; i++) {
+      final text = i < descriptions.length ? descriptions[i] : '';
+      if (text.trim().isEmpty) return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final contentState = ref.watch(contentCreationProvider);
     final images = contentState.images;
+    final canProceed = _everyPhotoHasDescription(
+      images.length,
+      contentState.descriptions,
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -167,7 +180,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
 
               PrimaryButton(
                 text: '다음 →',
-                onPressed: _handleNext,
+                onPressed: canProceed ? _handleNext : null,
               ),
             ],
           ),

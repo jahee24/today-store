@@ -58,8 +58,8 @@ class ContentGenerateResponse {
 
   factory ContentGenerateResponse.fromJson(Map<String, dynamic> json) {
     return ContentGenerateResponse(
-      requestId: (json['requestId'] ?? '').toString(),
-      taskId: (json['taskId'] ?? '').toString(),
+      requestId: (json['requestId'] ?? json['request_id'] ?? '').toString(),
+      taskId: (json['taskId'] ?? json['task_id'] ?? '').toString(),
       startedAt: json['startedAt'] != null
           ? DateTime.tryParse(json['startedAt'].toString())
           : null,
@@ -81,15 +81,18 @@ class ContentTaskResponse {
   });
 
   bool get isProcessing => status == 'processing';
+
   bool get isSuccess => status == 'success';
-  bool get isError => status == 'error';
+
+  bool get isError => status == 'error' || status == 'timeout';
 
   factory ContentTaskResponse.fromJson(Map<String, dynamic> json) {
+    final rawStatus = (json['status'] ?? '').toString().trim().toLowerCase();
     return ContentTaskResponse(
       taskId: (json['task_id'] ?? json['taskId'] ?? '').toString(),
-      status: (json['status'] ?? '').toString(),
+      status: rawStatus,
       result: json['result']?.toString(),
-      errorMessage: json['error_message']?.toString(),
+      errorMessage: (json['error_message'] ?? json['errorMessage'])?.toString(),
     );
   }
 }
@@ -184,6 +187,130 @@ class RequestContentsResponse {
     return RequestContentsResponse(
       requestId: (json['requestId'] ?? '').toString(),
       contents: list,
+    );
+  }
+}
+
+/// `GET /api/v1/contents/{contentId}` 응답.
+class ContentDetail {
+  final String id;
+  final String requestId;
+  final String generationType;
+  final bool isPosted;
+  final DateTime? createdAt;
+  final ContentDetailData contentData;
+  final List<ContentDetailImage> images;
+
+  const ContentDetail({
+    required this.id,
+    required this.requestId,
+    required this.generationType,
+    required this.isPosted,
+    this.createdAt,
+    required this.contentData,
+    required this.images,
+  });
+
+  factory ContentDetail.fromJson(Map<String, dynamic> json) {
+    final dataJson = json['contentData'] as Map<String, dynamic>? ?? const {};
+    return ContentDetail(
+      id: (json['id'] ?? '').toString(),
+      requestId: (json['requestId'] ?? '').toString(),
+      generationType: (json['generationType'] ?? '').toString(),
+      isPosted: json['isPosted'] as bool? ?? false,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
+      contentData: ContentDetailData.fromJson(dataJson),
+      images: (json['images'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(ContentDetailImage.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class ContentDetailData {
+  final ContentPlatformCopy instagram;
+  final ContentPlatformCopy karrot;
+  final ContentPlatformCopy naver;
+
+  const ContentDetailData({
+    required this.instagram,
+    required this.karrot,
+    required this.naver,
+  });
+
+  factory ContentDetailData.fromJson(Map<String, dynamic> json) {
+    return ContentDetailData(
+      instagram: ContentPlatformCopy.fromJson(
+        json['instagram'] as Map<String, dynamic>? ?? const {},
+      ),
+      karrot: ContentPlatformCopy.fromJson(
+        json['karrot'] as Map<String, dynamic>? ?? const {},
+      ),
+      naver: ContentPlatformCopy.fromJson(
+        json['naver'] as Map<String, dynamic>? ?? const {},
+      ),
+    );
+  }
+}
+
+class ContentPlatformCopy {
+  final String text;
+  final List<String> tagList;
+
+  const ContentPlatformCopy({
+    required this.text,
+    required this.tagList,
+  });
+
+  factory ContentPlatformCopy.fromJson(Map<String, dynamic> json) {
+    final raw = json['hashtags'] ?? json['tags'] ?? json['keywords'];
+    List<String> list = const [];
+    if (raw is List) {
+      list = raw.map((e) => e.toString()).toList();
+    }
+    return ContentPlatformCopy(
+      text: (json['text'] ?? '').toString(),
+      tagList: list,
+    );
+  }
+
+  String get hashtagsLine {
+    if (tagList.isEmpty) return '';
+    return tagList
+        .map((t) {
+          final s = t.trim();
+          if (s.isEmpty) return '';
+          return s.startsWith('#') ? s : '#$s';
+        })
+        .where((s) => s.isNotEmpty)
+        .join(' ');
+  }
+}
+
+class ContentDetailImage {
+  final String id;
+  final String inputImageId;
+  final String url;
+  final DateTime? createdAt;
+
+  const ContentDetailImage({
+    required this.id,
+    required this.inputImageId,
+    required this.url,
+    this.createdAt,
+  });
+
+  factory ContentDetailImage.fromJson(Map<String, dynamic> json) {
+    return ContentDetailImage(
+      id: (json['id'] ?? '').toString(),
+      inputImageId: (json['inputImageId'] ?? '').toString(),
+      url: (json['url'] ?? '').toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
     );
   }
 }

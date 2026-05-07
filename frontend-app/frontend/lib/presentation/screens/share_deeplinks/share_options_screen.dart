@@ -1,0 +1,381 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../config/app_theme.dart';
+import '../../widgets/buttons/back_arrow_button.dart';
+
+/// 공유 채널 선택 (딥링크·복사 등).
+class ShareOptionsScreen extends StatefulWidget {
+  const ShareOptionsScreen({super.key});
+
+  @override
+  State<ShareOptionsScreen> createState() => _ShareOptionsScreenState();
+}
+
+class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
+  /// 사용자가 탭하기 전까지는 강조 없음 (당근·네이버와 동일한 기본 테두리).
+  int? _selectedIndex;
+
+  /// 데스크톱·웹 호버 시 해당 카드만 대표색 테두리.
+  int? _hoveredIndex;
+
+  bool _primaryBorder(int index) {
+    if (_hoveredIndex != null) {
+      return _hoveredIndex == index;
+    }
+    if (_selectedIndex == null) {
+      return false;
+    }
+    return _selectedIndex == index;
+  }
+
+  void _handleBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/dashboard');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  BackArrowButton(onTap: () => _handleBack(context)),
+                  const SizedBox(width: 14),
+                  Text(
+                    '공유하기',
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              Text(
+                '어디에 공유할까요?',
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '여러 플랫폼에 동시에 공유할 수 있어요',
+                style: textTheme.bodyLarge?.copyWith(
+                  color: AppTheme.textTertiary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView(
+                  children: [
+                    MouseRegion(
+                      onEnter: (_) => setState(() => _hoveredIndex = 0),
+                      onExit: (_) => setState(() => _hoveredIndex = null),
+                      child: _ShareOptionCard(
+                        emphasized: _primaryBorder(0),
+                        backgroundColor: _primaryBorder(0)
+                            ? AppTheme.infoBg.withValues(alpha: 0.35)
+                            : AppTheme.surfaceColor,
+                        leading: _GradientIconBox(
+                          child: Icon(
+                            Icons.folder_open_rounded,
+                            color: Colors.white.withValues(alpha: 0.96),
+                            size: 26,
+                          ),
+                        ),
+                        title: 'Instagram',
+                        subtitle: '계정 연동 후 자동 발행',
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.successBg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '연동됨',
+                            style: textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.successText,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        onTap: () => setState(() => _selectedIndex = 0),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    MouseRegion(
+                      onEnter: (_) => setState(() => _hoveredIndex = 1),
+                      onExit: (_) => setState(() => _hoveredIndex = null),
+                      child: _ShareOptionCard(
+                        emphasized: _primaryBorder(1),
+                        backgroundColor: _primaryBorder(1)
+                            ? AppTheme.infoBg.withValues(alpha: 0.35)
+                            : AppTheme.surfaceColor,
+                        leading: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF8A3D),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            '🥕',
+                            style: TextStyle(fontSize: 28, height: 1),
+                          ),
+                        ),
+                        title: '당근마켓',
+                        subtitle: '딥링크로 앱에서 바로 작성',
+                        trailing: Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: AppTheme.textTertiary,
+                        ),
+                        onTap: () => setState(() => _selectedIndex = 1),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    MouseRegion(
+                      onEnter: (_) => setState(() => _hoveredIndex = 2),
+                      onExit: (_) => setState(() => _hoveredIndex = null),
+                      child: _ShareOptionCard(
+                        emphasized: _primaryBorder(2),
+                        backgroundColor: _primaryBorder(2)
+                            ? AppTheme.infoBg.withValues(alpha: 0.35)
+                            : AppTheme.surfaceColor,
+                        leading: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF03C75A),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'N',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                        title: '네이버 블로그',
+                        subtitle: '네이버 앱으로 이동하여 작성',
+                        trailing: Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: AppTheme.textTertiary,
+                        ),
+                        onTap: () => setState(() => _selectedIndex = 2),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    MouseRegion(
+                      onEnter: (_) => setState(() => _hoveredIndex = 3),
+                      onExit: (_) => setState(() => _hoveredIndex = null),
+                      child: _ShareOptionCard(
+                        emphasized: _primaryBorder(3),
+                        backgroundColor: _primaryBorder(3)
+                            ? AppTheme.infoBg.withValues(alpha: 0.4)
+                            : AppTheme.fillLight,
+                        leading: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8EAF6),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            Icons.content_paste_outlined,
+                            color: AppTheme.primaryColor.withValues(alpha: 0.9),
+                            size: 26,
+                          ),
+                        ),
+                        title: '텍스트 복사',
+                        subtitle: '클립보드에 복사하여 자유롭게 사용',
+                        trailing: Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: AppTheme.textTertiary,
+                        ),
+                        onTap: () {
+                          setState(() => _selectedIndex = 3);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('생성 문구는 결과 화면에서 복사할 수 있어요.')),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 68,
+                child: OutlinedButton(
+                  onPressed: () => context.go('/dashboard'),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    backgroundColor: AppTheme.surfaceColor,
+                  ),
+                  child: Text(
+                    '대시보드로 돌아가기',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GradientIconBox extends StatelessWidget {
+  const _GradientIconBox({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFF58529),
+            Color(0xFFDD2A7B),
+            Color(0xFF8134AF),
+          ],
+        ),
+      ),
+      child: Center(child: child),
+    );
+  }
+}
+
+class _ShareOptionCard extends StatelessWidget {
+  const _ShareOptionCard({
+    required this.leading,
+    required this.title,
+    required this.subtitle,
+    required this.trailing,
+    required this.onTap,
+    required this.backgroundColor,
+    required this.emphasized,
+  });
+
+  final Widget leading;
+  final String title;
+  final String subtitle;
+  final Widget trailing;
+  final VoidCallback onTap;
+  final Color backgroundColor;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final borderColor = emphasized ? AppTheme.primaryColor : AppTheme.borderStrongColor;
+    final borderWidth = emphasized ? 2.0 : 1.2;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: AppTheme.primaryColor.withValues(alpha: 0.12),
+        highlightColor: AppTheme.primaryColor.withValues(alpha: 0.06),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: borderWidth),
+            boxShadow: emphasized
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : const [
+                    BoxShadow(
+                      color: AppTheme.shadowColor,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+            child: Row(
+              children: [
+                leading,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                          fontSize: 17,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textTertiary,
+                          fontWeight: FontWeight.w500,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                trailing,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
