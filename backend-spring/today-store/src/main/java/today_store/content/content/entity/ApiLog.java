@@ -53,9 +53,16 @@ public class ApiLog {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Column(name = "external_request_id", length = 100)
+    private String externalRequestId;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public void updateExternalRequestId(String externalRequestId) {
+        this.externalRequestId = externalRequestId;
+    }
 
     public void completeSuccess(Content content, Integer inputTokens, Integer outputTokens, BigDecimal costUsd, Integer responseTimeMs) {
         this.status = ApiStatus.SUCCESS;

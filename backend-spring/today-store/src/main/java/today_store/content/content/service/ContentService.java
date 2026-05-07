@@ -545,7 +545,14 @@ public class ContentService {
         ApiLog savedLog = apiLogRepository.save(apiLog);
         String signedUrl = gcsService.generateSignedUrl(inputImage.getUrl());
         runComfyService.requestVariation(signedUrl, savedLog.getId().toString(), inputImageId.toString())
-                .subscribe(response -> log.info("Successfully initiated RunComfy variation: {}", response.getRequestId()), error -> {
+                .subscribe(response -> {
+                    log.info("Successfully initiated RunComfy variation: {}", response.getRequestId());
+                    transactionTemplate.execute(status -> {
+                        ApiLog logToUpdate = apiLogRepository.findById(savedLog.getId()).orElseThrow();
+                        logToUpdate.updateExternalRequestId(response.getRequestId());
+                        return apiLogRepository.save(logToUpdate);
+                    });
+                }, error -> {
                     log.error("Failed to initiate RunComfy variation for apiLogId: {}", savedLog.getId());
                     transactionTemplate.execute(status -> {
                         ApiLog logToUpdate = apiLogRepository.findById(savedLog.getId()).orElseThrow();

@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/oauth/login", "/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/auth/oauth/login", "/api/v1/auth/refresh","/api/v1/webhooks/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, blacklistedTokenRepository),
