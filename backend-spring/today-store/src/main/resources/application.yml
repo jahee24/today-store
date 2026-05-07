@@ -83,7 +83,7 @@ app:
     signed-url-duration-minutes: ${SIGNED_URL_DURATION_MINUTES:15}
   gemini:
     api-key: ${GEMINI_API_KEY}
-    model: "gemini-3-flash-lite-preview"
+    model: "gemini-3.1-flash-lite-preview"
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
 
 instagram:

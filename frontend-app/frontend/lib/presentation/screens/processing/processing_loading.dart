@@ -243,6 +243,8 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
 
       _handleGenerationFailure('이미지 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.');
     } catch (e) {
+      _timer?.cancel();
+      _cancelProgressClimbTimer();
       _handleGenerationFailure(_extractErrorMessage(e));
     }
   }
