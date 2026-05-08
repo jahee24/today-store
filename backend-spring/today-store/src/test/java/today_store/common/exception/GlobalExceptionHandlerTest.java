@@ -3,11 +3,15 @@ package today_store.common.exception;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.validation.Valid;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpInputMessage;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -223,6 +227,37 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getCode()).isEqualTo("C004");
         assertThat(response.getBody().getMessage()).isEqualTo("File size limit exceeded");
+    }
+
+    @Test
+    @DisplayName("읽을 수 없는 JSON 요청 본문을 C003 응답으로 변환")
+    void shouldHandleHttpMessageNotReadableException() {
+        // JSON 역직렬화 실패는 잘못된 요청 본문 형식 응답으로 변환해야 한다.
+
+        // given
+        HttpInputMessage inputMessage = new HttpInputMessage() {
+            @Override
+            public InputStream getBody() {
+                return InputStream.nullInputStream();
+            }
+
+            @Override
+            public HttpHeaders getHeaders() {
+                return HttpHeaders.EMPTY;
+            }
+        };
+        HttpMessageNotReadableException exception =
+                new HttpMessageNotReadableException("invalid request body", inputMessage);
+
+        // when
+        ResponseEntity<ErrorResponse> response =
+                globalExceptionHandler.handleHttpMessageNotReadableException(exception);
+
+        // then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo("C003");
+        assertThat(response.getBody().getMessage()).isEqualTo("Invalid request body format");
     }
 
     @Test

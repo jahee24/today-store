@@ -18,6 +18,7 @@ import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -56,11 +57,14 @@ public class JwtTokenProvider {
                 .collect(Collectors.joining(","));
 
         long now = (new Date()).getTime();
+        Date issuedAt = new Date(now);
         Date validity = new Date(now + expirationSeconds * 1000);
 
         return Jwts.builder()
                 .subject(authentication.getName())
                 .claim(AUTHORITIES_KEY, authorities)
+                .id(UUID.randomUUID().toString())
+                .issuedAt(issuedAt)
                 .signWith(key)
                 .expiration(validity)
                 .compact();
