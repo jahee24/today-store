@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/providers/content_creation_provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/progress/step_indicator_line.dart';
@@ -75,6 +76,7 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
     final contentState = ref.watch(contentCreationProvider);
     final selectedStyle = contentState.selectedStyle ?? '감성적';
 
@@ -82,14 +84,14 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
+          padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(18)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   BackArrowButton(onTap: _handleBack),
-                  const SizedBox(width: 14),
+                  SizedBox(width: h(12)),
                   Text(
                     '콘텐츠 만들기',
                     style: textTheme.headlineSmall?.copyWith(
@@ -99,14 +101,14 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: h(22)),
 
               const StepIndicatorLine(
                 currentStep: 3,
                 totalSteps: 4,
               ),
 
-              const SizedBox(height: 34),
+              SizedBox(height: h(28)),
 
               Text(
                 '어떤 스타일로 만들까요?',
@@ -115,7 +117,7 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: h(8)),
               Text(
                 '원하는 정보 전달 톤을 선택해주세요',
                 style: textTheme.bodyLarge?.copyWith(
@@ -124,7 +126,7 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: h(20)),
 
               Expanded(
                 child: SingleChildScrollView(
@@ -133,7 +135,7 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
                       final isSelected = selectedStyle == option.keyValue;
 
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 18),
+                        padding: EdgeInsets.only(bottom: h(14)),
                         child: StyleOptionCard(
                           title: option.title,
                           emoji: option.emoji,
@@ -151,7 +153,7 @@ class _Step3StyleSelectState extends ConsumerState<Step3StyleSelect> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: h(14)),
 
               PrimaryButton(
                 text: '다음 →',

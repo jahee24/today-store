@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/models/content_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/cards/recent_content_card.dart';
@@ -83,13 +84,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final historyAsync = ref.watch(historyRequestsProvider);
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(14)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -97,14 +100,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 '콘텐츠 이력',
                 style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                  fontSize: f(32),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: h(14)),
               SearchInput(
                 hintText: '콘텐츠 검색...',
                 onChanged: (value) => setState(() => _query = value),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: h(14)),
               Row(
                 children: [
                   _FilterChip(
@@ -112,13 +116,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     selected: _selectedType == null,
                     onTap: () => _selectFilter(null),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: h(8)),
                   _FilterChip(
                     label: '문구',
                     selected: _selectedType == _HistoryType.text,
                     onTap: () => _selectFilter(_HistoryType.text),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: h(8)),
                   _FilterChip(
                     label: '이미지',
                     selected: _selectedType == _HistoryType.image,
@@ -126,7 +130,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: h(14)),
               Expanded(
                 child: historyAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
@@ -155,7 +159,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     }
                     return ListView.separated(
                       itemCount: items.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 14),
+                      separatorBuilder: (context, index) => SizedBox(height: h(12)),
                       itemBuilder: (context, index) {
                         final item = items[index];
                         final isImage = item.type == _HistoryType.image;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 
 class ContentBaseCard extends StatelessWidget {
   final Widget imageSlot;
@@ -17,12 +18,13 @@ class ContentBaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(h(borderRadius)),
         border: Border.all(color: AppTheme.borderColor),
         boxShadow: const [
           BoxShadow(
@@ -36,7 +38,7 @@ class ContentBaseCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           imageSlot,
-          const SizedBox(width: 16),
+          SizedBox(width: h(12)),
           Expanded(child: content),
         ],
       ),

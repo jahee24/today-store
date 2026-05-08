@@ -21,6 +21,12 @@ class ContentRepository {
     return contentApi.getRequestContents(requestId: requestId);
   }
 
+  Future<GenerationRequestDetailResponse> getRequestDetail({
+    required String requestId,
+  }) {
+    return contentApi.getRequestDetail(requestId: requestId);
+  }
+
   Future<ContentCreateResponse> createContentRequest({
     required String concept,
     String? additionalNote,
@@ -45,6 +51,18 @@ class ContentRepository {
     return contentApi.generateContent(requestId: requestId);
   }
 
+  Future<ImageVariationStartResponse> startImageVariation({
+    required String inputImageId,
+  }) {
+    return contentApi.startImageVariation(inputImageId: inputImageId);
+  }
+
+  Future<List<ImageVariationItem>> getImageVariations({
+    required String inputImageId,
+  }) {
+    return contentApi.getImageVariations(inputImageId: inputImageId);
+  }
+
   Future<ContentTaskResponse> getTaskStatus({
     required String apiLogId,
   }) {
@@ -55,5 +73,11 @@ class ContentRepository {
     required String contentId,
   }) {
     return contentApi.getContent(contentId: contentId);
+  }
+
+  Future<void> deleteGenerationRequest({
+    required String requestId,
+  }) {
+    return contentApi.deleteGenerationRequest(requestId: requestId);
   }
 }

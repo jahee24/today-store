@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/models/processing_model.dart';
 import '../../../data/providers/content_creation_provider.dart';
 import '../../../data/providers/dashboard_provider.dart';
+import '../../../data/providers/image_content_creation_provider.dart';
 
 enum ProcessingMode { text, image }
 
@@ -39,7 +41,9 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
     super.initState();
     uiState = _initialState();
     if (widget.mode == ProcessingMode.image) {
-      _startMockProgress();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startImageVariationFlow();
+      });
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -111,35 +115,6 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
     );
   }
 
-  void _startMockProgress() {
-    _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
-      final nextProgress = uiState.progress + 15;
-
-      if (nextProgress >= 100) {
-        setState(() {
-          uiState = _completedState();
-        });
-
-        timer.cancel();
-
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (!mounted) return;
-          if (widget.mode == ProcessingMode.image) {
-            context.go('/image-result');
-          } else {
-            context.go('/result');
-          }
-        });
-
-        return;
-      }
-
-      setState(() {
-        uiState = _buildImageStateByProgress(nextProgress);
-      });
-    });
-  }
-
   Future<void> _startTextGenerationFlow() async {
     try {
       final contentState = ref.read(contentCreationProvider);
@@ -187,6 +162,86 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
         _pollTaskStatus();
       });
       unawaited(_pollTaskStatus());
+    } catch (e) {
+      _timer?.cancel();
+      _cancelProgressClimbTimer();
+      _handleGenerationFailure(_extractErrorMessage(e));
+    }
+  }
+
+  Future<void> _startImageVariationFlow() async {
+    try {
+      final imageState = ref.read(imageContentCreationProvider);
+      if (imageState.images.isEmpty) {
+        _handleGenerationFailure('업로드된 사진이 없어요. 다시 시도해 주세요.');
+        return;
+      }
+
+      final repository = ref.read(contentRepositoryProvider);
+      final imageDescriptions = List.generate(
+        imageState.images.length,
+        (index) => '매장 사진 ${index + 1}',
+      );
+
+      final created = await repository.createContentRequest(
+        concept: '이미지 베리에이션',
+        imageDescriptions: imageDescriptions,
+        imagePaths: imageState.images.map((image) => image.path).toList(),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        uiState = _buildImageStateByProgress(25);
+      });
+
+      final detail = await repository.getRequestDetail(requestId: created.requestId);
+      if (detail.images.isEmpty) {
+        _handleGenerationFailure('입력 이미지 정보를 찾을 수 없어요.');
+        return;
+      }
+
+      final inputImageId = detail.images.first.id;
+      ref.read(imageContentCreationProvider.notifier).setRequestContext(
+            requestId: created.requestId,
+            inputImageId: inputImageId,
+          );
+
+      final started = await repository.startImageVariation(inputImageId: inputImageId);
+      _requestId = started.requestId;
+      _taskId = started.taskId;
+
+      if (!mounted) return;
+      setState(() {
+        uiState = _buildImageStateByProgress(50);
+      });
+
+      const maxAttempts = 30;
+      for (var attempt = 0; attempt < maxAttempts; attempt++) {
+        final variations = await repository.getImageVariations(
+          inputImageId: inputImageId,
+        );
+
+        if (variations.isNotEmpty) {
+          ref.read(imageContentCreationProvider.notifier).setVariations(variations);
+          if (!mounted) return;
+          setState(() {
+            uiState = _completedState();
+          });
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (!mounted) return;
+          context.go('/image-result');
+          return;
+        }
+
+        if (!mounted) return;
+        final progress = (50 + (attempt + 1) * 2).clamp(50, 95);
+        setState(() {
+          uiState = _buildImageStateByProgress(progress);
+        });
+        await Future.delayed(const Duration(seconds: 2));
+      }
+
+      _handleGenerationFailure('이미지 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.');
     } catch (e) {
       _timer?.cancel();
       _cancelProgressClimbTimer();
@@ -254,6 +309,10 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    if (widget.mode == ProcessingMode.image) {
+      context.go('/image-step1');
+      return;
+    }
     context.go('/step3');
   }
 
@@ -533,11 +592,12 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          padding: EdgeInsets.fromLTRB(h(20), h(20), h(20), h(26)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -546,7 +606,7 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
                 alignment: Alignment.center,
                 child: _ProgressCircle(progress: uiState.progress),
               ),
-              const SizedBox(height: 36),
+              SizedBox(height: h(30)),
               Text(
                 uiState.title,
                 textAlign: TextAlign.center,
@@ -555,7 +615,7 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: h(14)),
               Text(
                 uiState.subtitle,
                 textAlign: TextAlign.center,
@@ -565,7 +625,7 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: h(32)),
               _ProcessingStepCard(
                 steps: uiState.steps,
               ),

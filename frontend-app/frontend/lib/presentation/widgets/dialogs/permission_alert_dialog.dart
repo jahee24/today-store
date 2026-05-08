@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../config/constants.dart';
 
 class PermissionAlertDialog {
   PermissionAlertDialog._();
@@ -13,37 +14,39 @@ class PermissionAlertDialog {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
+        final h = (double v) => AppLayout.h(dialogContext, v);
+        final f = (double v) => AppLayout.f(dialogContext, v);
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          insetPadding: EdgeInsets.symmetric(horizontal: h(24)),
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF2F2F2F),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(h(20)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                  padding: EdgeInsets.fromLTRB(h(20), h(24), h(20), h(18)),
                   child: Column(
                     children: [
                       Text(
                         title,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 19,
+                        style: TextStyle(
+                          fontSize: f(19),
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           height: 1.35,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: h(8)),
                       Text(
                         description,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: f(15),
                           fontWeight: FontWeight.w500,
                           color: Color(0xFFE3E3E3),
                           height: 1.4,
@@ -63,16 +66,16 @@ class PermissionAlertDialog {
                       Expanded(
                         child: InkWell(
                           onTap: () => Navigator.of(dialogContext).pop(),
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(22),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(h(20)),
                           ),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 18),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: h(16)),
                             child: Text(
                               '취소',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 17,
+                                fontSize: f(17),
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xFF4D8DFF),
                               ),
@@ -91,16 +94,16 @@ class PermissionAlertDialog {
                             Navigator.of(dialogContext).pop();
                             await openAppSettings();
                           },
-                          borderRadius: const BorderRadius.only(
-                            bottomRight: Radius.circular(22),
+                          borderRadius: BorderRadius.only(
+                            bottomRight: Radius.circular(h(20)),
                           ),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 18),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: h(16)),
                             child: Text(
                               '지금 설정하기',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 17,
+                                fontSize: f(17),
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xFF4D8DFF),
                               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/providers/auth_provider.dart';
 import 'login_loading.dart';
 
@@ -15,6 +16,9 @@ class LoginScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final size = MediaQuery.of(context).size;
+    final scale = AppLayout.scale(context);
+    final horizontalPadding = AppLayout.h(context, 32);
+    final buttonHeight = AppLayout.h(context, 75);
     final authState = ref.watch(authProvider);
 
     ref.listen<AuthState>(authProvider, (_, next) {
@@ -40,37 +44,37 @@ class LoginScreen extends ConsumerWidget {
         children: [
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Column(
                 children: [
                   SizedBox(height: size.height * 0.23),
 
-                  const SizedBox(
-                    width: 90,
-                    height: 90,
+                  SizedBox(
+                    width: AppLayout.h(context, 90),
+                    height: AppLayout.h(context, 90),
                     child: Center(
-                      child: Text('🏪', style: TextStyle(fontSize: 58)),
+                      child: Text('🏪', style: TextStyle(fontSize: AppLayout.f(context, 58))),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: AppLayout.h(context, 20)),
 
                   Text(
                     '오늘의 가게',
                     style: textTheme.headlineLarge?.copyWith(
-                      fontSize: 33,
+                      fontSize: AppLayout.f(context, 33),
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
                       height: 1.1,
                       letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 17),
+                  SizedBox(height: AppLayout.h(context, 17)),
 
                   Text(
                     'AI가 만들어주는\n우리 가게 홍보 콘텐츠',
                     textAlign: TextAlign.center,
                     style: textTheme.bodyLarge?.copyWith(
-                      fontSize: 18,
+                      fontSize: AppLayout.f(context, 18),
                       height: 1.5,
                       color: AppTheme.textTertiary,
                       fontWeight: FontWeight.w500,
@@ -80,7 +84,7 @@ class LoginScreen extends ConsumerWidget {
 
                   SizedBox(
                     width: double.infinity,
-                    height: 75,
+                    height: buttonHeight,
                     child: ElevatedButton(
                       onPressed: authState.status == AuthStatus.loading
                           ? null
@@ -102,11 +106,11 @@ class LoginScreen extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text('💬', style: TextStyle(fontSize: 18)),
-                          const SizedBox(width: 13),
+                          SizedBox(width: AppLayout.h(context, 13)),
                           Text(
                             '카카오로 시작하기',
                             style: textTheme.titleMedium?.copyWith(
-                              fontSize: 20,
+                              fontSize: AppLayout.f(context, 20),
                               fontWeight: FontWeight.w600,
                               color: _kakaoForeground,
                             ),
@@ -115,11 +119,11 @@ class LoginScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: AppLayout.h(context, 18)),
 
                   SizedBox(
                     width: double.infinity,
-                    height: 75,
+                    height: buttonHeight,
                     child: OutlinedButton(
                       onPressed: authState.status == AuthStatus.loading
                           ? null
@@ -141,20 +145,20 @@ class LoginScreen extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'G',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: AppLayout.f(context, 24),
                               fontWeight: FontWeight.w500,
                               color: AppTheme.textPrimary,
                             ),
                           ),
-                          const SizedBox(width: 11),
+                          SizedBox(width: AppLayout.h(context, 11)),
 
                           Text(
                             'Google로 시작하기',
                             style: textTheme.titleMedium?.copyWith(
-                              fontSize: 20,
+                              fontSize: AppLayout.f(context, 20),
                               fontWeight: FontWeight.w600,
                               color: AppTheme.textPrimary,
                             ),
@@ -163,19 +167,19 @@ class LoginScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  SizedBox(height: AppLayout.h(context, 28)),
 
                   Text(
                     '로그인 시 이용약관 및 개인정보처리방침에 동의합니다',
                     textAlign: TextAlign.center,
                     style: textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
+                      fontSize: AppLayout.f(context, 14),
                       color: AppTheme.textHint,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
 
-                  SizedBox(height: size.height * 0.18),
+                  SizedBox(height: size.height * (0.18 * scale.clamp(0.9, 1.0))),
                 ],
               ),
             ),

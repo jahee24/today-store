@@ -78,6 +78,34 @@ class StoreNotifier extends StateNotifier<StoreState> {
     required this.repository,
   }) : super(const StoreState());
 
+  String _extractStoreErrorMessage(
+    DioException e, {
+    required String fallbackMessage,
+  }) {
+    final statusCode = e.response?.statusCode;
+    final data = e.response?.data;
+
+    if (data is Map<String, dynamic>) {
+      final parsed = StoreErrorResponse.fromJson(data);
+      final message = parsed.message.trim();
+      if (message.isNotEmpty) {
+        return statusCode != null ? '[$statusCode] $message' : message;
+      }
+    }
+
+    if (data is String && data.trim().isNotEmpty) {
+      return statusCode != null
+          ? '[$statusCode] ${data.trim()}'
+          : data.trim();
+    }
+
+    if (statusCode != null) {
+      return '$fallbackMessage (HTTP $statusCode)';
+    }
+
+    return fallbackMessage;
+  }
+
   Future<void> createStore({
     required String storeName,
     required String businessType,
@@ -120,17 +148,12 @@ class StoreNotifier extends StateNotifier<StoreState> {
         clearError: true,
       );
     } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = '가게 등록 중 문제가 발생했어요';
-
-      if (data is Map<String, dynamic>) {
-        final parsed = StoreErrorResponse.fromJson(data);
-        message = parsed.message;
-      }
-
       state = state.copyWith(
         isLoading: false,
-        errorMessage: message,
+        errorMessage: _extractStoreErrorMessage(
+          e,
+          fallbackMessage: '가게 등록 중 문제가 발생했어요',
+        ),
       );
     } catch (_) {
       state = state.copyWith(
@@ -192,17 +215,12 @@ class StoreNotifier extends StateNotifier<StoreState> {
         clearError: true,
       );
     } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = '가게 정보 수정 중 문제가 발생했어요';
-
-      if (data is Map<String, dynamic>) {
-        final parsed = StoreErrorResponse.fromJson(data);
-        message = parsed.message;
-      }
-
       state = state.copyWith(
         isLoading: false,
-        errorMessage: message,
+        errorMessage: _extractStoreErrorMessage(
+          e,
+          fallbackMessage: '가게 정보 수정 중 문제가 발생했어요',
+        ),
       );
     } catch (_) {
       state = state.copyWith(

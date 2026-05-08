@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 
 class DottedLinedCard extends StatelessWidget {
   final VoidCallback onTap;
@@ -11,44 +12,46 @@ class DottedLinedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(234),
+      borderRadius: BorderRadius.circular(h(220)),
       child: CustomPaint(
         foregroundPainter: _DashedBorderPainter(
           color: const Color(0xFFCDD3FF),
           strokeWidth: 2,
           dashWidth: 4,
           dashSpace: 5,
-          radius: 28,
+          radius: h(24),
         ),
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
             color: const Color(0xFFF8F8FC),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(h(24)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 '📷',
-                style: TextStyle(fontSize: 44),
+                style: TextStyle(fontSize: f(42)),
               ),
-              const SizedBox(height: 10),
-              const Text(
+              SizedBox(height: h(8)),
+              Text(
                 '사진 추가',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: f(20),
                   fontWeight: FontWeight.w800,
                   color: AppTheme.primaryColor,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: h(4)),
               Text(
                 '갤러리에서 선택하거나 카메라로 촬영',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 15,
+                  fontSize: f(15),
                   color: AppTheme.textTertiary,
                   fontWeight: FontWeight.w500,
                 ),

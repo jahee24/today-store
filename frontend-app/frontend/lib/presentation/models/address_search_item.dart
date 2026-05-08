@@ -45,4 +45,18 @@ class AddressSearchItem {
       longitude: double.tryParse(json['x']?.toString() ?? '') ?? 0,
     );
   }
+
+  factory AddressSearchItem.fromNaverGeocodeJson(Map<String, dynamic> json) {
+    final roadAddress = (json['roadAddress'] ?? '').toString();
+    final jibunAddress = (json['jibunAddress'] ?? '').toString();
+    final display = roadAddress.isNotEmpty ? roadAddress : jibunAddress;
+
+    return AddressSearchItem(
+      addressName: display,
+      roadAddress: roadAddress,
+      jibunAddress: jibunAddress,
+      latitude: double.tryParse(json['y']?.toString() ?? '') ?? 0,
+      longitude: double.tryParse(json['x']?.toString() ?? '') ?? 0,
+    );
+  }
 }

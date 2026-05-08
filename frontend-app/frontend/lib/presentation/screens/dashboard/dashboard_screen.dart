@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/models/content_model.dart';
 import '../../../data/models/store_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
@@ -10,6 +11,7 @@ import '../../../data/providers/store_provider.dart';
 import '../../widgets/cards/recent_content_card.dart';
 import '../../widgets/cards/stat_card.dart';
 import '../../widgets/buttons/creation_action_button.dart';
+import '../../widgets/dialogs/app_confirm_dialog.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
 String _dashboardStoreTitle(
@@ -41,16 +43,45 @@ String _dashboardStoreTitle(
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
+  void _handleCreateContentTap(
+    BuildContext context,
+    AsyncValue<StoreProfileModel?> storeProfileAsync,
+    String targetRoute,
+  ) {
+    final hasStoreProfile = storeProfileAsync.maybeWhen(
+      data: (store) => store != null,
+      orElse: () => false,
+    );
+
+    if (hasStoreProfile) {
+      context.push(targetRoute);
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AppConfirmDialog(
+        title: '알림',
+        content: '가게 정보를 먼저 입력해주세요.',
+        cancelText: '닫기',
+        confirmText: '입력하러 가기',
+        onConfirm: () => context.push('/profile-setup?mode=edit'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final size = MediaQuery.of(context).size;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     final dashboardAsync = ref.watch(dashboardDataProvider);
     final storeProfileAsync = ref.watch(currentStoreProfileProvider);
 
-    final horizontalPadding = math.max(16.0, size.width * 0.05);
-    final topPadding = math.max(16.0, size.height * 0.02);
-    final bottomPadding = math.max(20.0, size.height * 0.025);
+    final horizontalPadding = math.max(h(14), size.width * 0.045);
+    final topPadding = math.max(h(12), size.height * 0.018);
+    final bottomPadding = math.max(h(16), size.height * 0.02);
 
     return Scaffold(
       bottomNavigationBar: AppBottomNavBar(currentIndex: 0),
@@ -79,7 +110,7 @@ class DashboardScreen extends ConsumerWidget {
                               '안녕하세요 👋',
                               style: textTheme.bodyLarge?.copyWith(
                                 color: AppTheme.textSecondary,
-                                fontSize: 18,
+                                fontSize: f(18),
                               ),
                             ),
                             Text(
@@ -88,7 +119,7 @@ class DashboardScreen extends ConsumerWidget {
                                 dashboardAsync,
                               ),
                               style: textTheme.headlineMedium?.copyWith(
-                                fontSize: 26,
+                                fontSize: f(26),
                               ),
                             ),
                           ],
@@ -112,15 +143,15 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: h(18)),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(h(24)),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [AppTheme.primaryColor, AppTheme.infoText],
                       ),
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(h(24)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,10 +161,10 @@ class DashboardScreen extends ConsumerWidget {
                           style: textTheme.titleMedium?.copyWith(
                             color: AppTheme.textOnPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 23,
+                            fontSize: f(23),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: h(4)),
                         Text(
                           'AI가 알아서 만들어 드려요',
                           style: textTheme.bodyLarge?.copyWith(
@@ -141,21 +172,29 @@ class DashboardScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 22),
+                        SizedBox(height: h(18)),
                         Row(
                           children: [
                             Expanded(
                               child: CreationActionButton(
                                 label: '+ 문구 생성',
-                                onPressed: () => context.push('/step1'),
+                                onPressed: () => _handleCreateContentTap(
+                                  context,
+                                  storeProfileAsync,
+                                  '/step1',
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: h(10)),
                             Expanded(
                               child: CreationActionButton(
                                 label: '+ 이미지 생성',
                                 filled: false,
-                                onPressed: () => context.push('/image-step1'),
+                                onPressed: () => _handleCreateContentTap(
+                                  context,
+                                  storeProfileAsync,
+                                  '/image-step1',
+                                ),
                               ),
                             ),
                           ],
@@ -163,7 +202,7 @@ class DashboardScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: h(18)),
                   dashboardAsync.when(
                     data: (data) => Row(
                       children: [
@@ -174,7 +213,7 @@ class DashboardScreen extends ConsumerWidget {
                             valueColor: AppTheme.primaryColor,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: h(10)),
                         Expanded(
                           child: StatCard(
                             value: data.stats.totalShared.toString(),
@@ -182,7 +221,7 @@ class DashboardScreen extends ConsumerWidget {
                             valueColor: const Color(0xFF4F8B41),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: h(10)),
                         Expanded(
                           child: StatCard(
                             value: data.stats.createdThisWeek.toString(),
@@ -192,7 +231,7 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    loading: () => const Row(
+                    loading: () => Row(
                       children: [
                         Expanded(
                           child: StatCard(
@@ -201,7 +240,7 @@ class DashboardScreen extends ConsumerWidget {
                             valueColor: AppTheme.primaryColor,
                           ),
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: h(10)),
                         Expanded(
                           child: StatCard(
                             value: '-',
@@ -209,7 +248,7 @@ class DashboardScreen extends ConsumerWidget {
                             valueColor: Color(0xFF4F8B41),
                           ),
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: h(10)),
                         Expanded(
                           child: StatCard(
                             value: '-',
@@ -219,7 +258,7 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    error: (_, __) => const Row(
+                    error: (_, __) => Row(
                       children: [
                         Expanded(
                           child: StatCard(
@@ -228,7 +267,7 @@ class DashboardScreen extends ConsumerWidget {
                             valueColor: AppTheme.primaryColor,
                           ),
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: h(10)),
                         Expanded(
                           child: StatCard(
                             value: '0',
@@ -236,7 +275,7 @@ class DashboardScreen extends ConsumerWidget {
                             valueColor: Color(0xFF4F8B41),
                           ),
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: h(10)),
                         Expanded(
                           child: StatCard(
                             value: '0',
@@ -247,7 +286,7 @@ class DashboardScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: h(20)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -255,17 +294,17 @@ class DashboardScreen extends ConsumerWidget {
                         '최근 콘텐츠',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 21,
+                          fontSize: f(21),
                         ),
                       ),
                       TextButton(
                         onPressed: () {
                           context.push('/history');
                         },
-                        child: const Text(
+                        child: Text(
                           '전체보기',
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: f(17),
                             fontWeight: FontWeight.w500,
                             color: AppTheme.primaryColor,
                           ),
@@ -273,7 +312,7 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: h(6)),
                   dashboardAsync.when(
                     data: (data) {
                       if (data.recentRequests.isEmpty) {

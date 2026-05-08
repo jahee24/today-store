@@ -29,6 +29,15 @@ class ContentApi {
     return RequestContentsResponse.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<GenerationRequestDetailResponse> getRequestDetail({
+    required String requestId,
+  }) async {
+    final response = await dio.get('/api/v1/contents/request/$requestId');
+    return GenerationRequestDetailResponse.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
   Future<ContentCreateResponse> createContentRequest({
     required String concept,
     String? additionalNote,
@@ -69,6 +78,26 @@ class ContentApi {
     return ContentGenerateResponse.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<ImageVariationStartResponse> startImageVariation({
+    required String inputImageId,
+  }) async {
+    final response = await dio.post('/api/v1/contents/images/$inputImageId/vary');
+    return ImageVariationStartResponse.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
+  Future<List<ImageVariationItem>> getImageVariations({
+    required String inputImageId,
+  }) async {
+    final response = await dio.get('/api/v1/contents/images/$inputImageId/variations');
+    final list = response.data as List<dynamic>? ?? const [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(ImageVariationItem.fromJson)
+        .toList();
+  }
+
   Future<ContentTaskResponse> getTaskStatus({
     required String apiLogId,
   }) async {
@@ -81,5 +110,11 @@ class ContentApi {
   }) async {
     final response = await dio.get('/api/v1/contents/$contentId');
     return ContentDetail.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteGenerationRequest({
+    required String requestId,
+  }) async {
+    await dio.delete('/api/v1/contents/request/$requestId');
   }
 }

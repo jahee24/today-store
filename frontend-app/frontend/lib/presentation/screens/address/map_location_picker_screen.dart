@@ -7,7 +7,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
-import '../../../data/datasources/remote/kakao_local_api.dart';
+import '../../../data/datasources/remote/naver_local_api.dart';
 import '../../../services/permission_service.dart';
 import '../../models/address_pick_result.dart';
 import '../../widgets/buttons/primary_button.dart';
@@ -22,7 +22,7 @@ class MapLocationPickerScreen extends StatefulWidget {
 
 class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   NaverMapController? _mapController;
-  late final KakaoLocalApi _kakaoLocalApi;
+  late final NaverLocalApi _naverLocalApi;
 
   double _latitude = 37.5666;
   double _longitude = 126.9790;
@@ -34,6 +34,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   bool _isAddressLoading = false;
   bool _isSubmitting = false;
   bool _isPermissionDenied = false;
+  bool _isAddressResolved = false;
 
   Timer? _cameraIdleDebounce;
 
@@ -41,8 +42,9 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   void initState() {
     super.initState();
 
-    _kakaoLocalApi = KakaoLocalApi(
-      restApiKey: AppKeys.kakaoRestApiKey,
+    _naverLocalApi = NaverLocalApi(
+      clientId: AppKeys.naverMapClientId,
+      clientSecret: AppKeys.naverMapClientSecret,
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -183,10 +185,16 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
     setState(() {
       _isAddressLoading = true;
+      _isAddressResolved = false;
     });
 
     try {
-      final result = await _kakaoLocalApi.coordToAddress(
+      if (AppKeys.naverMapClientId.isEmpty ||
+          AppKeys.naverMapClientSecret.isEmpty) {
+        throw Exception('Naver API key is missing');
+      }
+
+      final result = await _naverLocalApi.coordToAddress(
         latitude: lat,
         longitude: lng,
       );
@@ -199,15 +207,16 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             : '선택한 위치';
         _jibunAddress = result.jibunAddress ?? '';
         _isAddressLoading = false;
+        _isAddressResolved = result.displayAddress.trim().isNotEmpty;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        _roadAddress = '선택한 위치';
-        _jibunAddress =
-            '위도 ${lat.toStringAsFixed(6)}, 경도 ${lng.toStringAsFixed(6)}';
+        _roadAddress = '주소를 불러오지 못했어요';
+        _jibunAddress = '네트워크 또는 API 설정을 확인한 뒤 다시 시도해주세요.';
         _isAddressLoading = false;
+        _isAddressResolved = false;
       });
 
       debugPrint('좌표 주소 변환 실패: $e');
@@ -215,7 +224,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   }
 
   void _confirmLocation() {
-    if (_isPermissionDenied || _isSubmitting) return;
+    if (_isPermissionDenied || _isSubmitting || _isAddressLoading || !_isAddressResolved) return;
 
     setState(() {
       _isSubmitting = true;
@@ -301,6 +310,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
     return Scaffold(
       backgroundColor: AppTheme.surfaceColor,
       body: SafeArea(
@@ -316,6 +326,9 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                           zoom: 16,
                         ),
                         locationButtonEnable: false,
+                        scrollGesturesEnable: true,
+                        zoomGesturesEnable: true,
+                        tiltGesturesEnable: true,
                       ),
                       onMapReady: (controller) async {
                         _mapController = controller;
@@ -330,7 +343,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                     right: 0,
                     top: 0,
                     child: Container(
-                      height: 72,
+                      height: h(66),
                       color: AppTheme.surfaceColor,
                       child: Stack(
                         alignment: Alignment.center,
@@ -358,27 +371,27 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                     ),
                   ),
 
-                  const Center(
+                  Center(
                     child: Padding(
-                      padding: EdgeInsets.only(bottom: 42),
+                      padding: EdgeInsets.only(bottom: h(38)),
                       child: Icon(
                         Icons.location_on,
-                        size: 58,
+                        size: h(52),
                         color: Color(0xFF333333),
                       ),
                     ),
                   ),
 
                   Positioned(
-                    right: 20,
-                    bottom: 230,
+                    right: h(16),
+                    bottom: h(214),
                     child: GestureDetector(
                       onTap: () => _moveToCurrentLocation(
                         showErrorDialog: true,
                       ),
                       child: Container(
-                        width: 58,
-                        height: 58,
+                        width: h(54),
+                        height: h(54),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -404,7 +417,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                     right: 0,
                     bottom: 0,
                     child: Container(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                      padding: EdgeInsets.fromLTRB(h(20), h(20), h(20), h(16)),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.vertical(
@@ -417,7 +430,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                         children: [
                           if (_isAddressLoading)
                             const LinearProgressIndicator(minHeight: 2),
-                          if (_isAddressLoading) const SizedBox(height: 16),
+                          if (_isAddressLoading) SizedBox(height: h(12)),
                           Text(
                             _roadAddress,
                             style: const TextStyle(
@@ -427,7 +440,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                               height: 1.3,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: h(8)),
                           Text(
                             _jibunAddress,
                             style: const TextStyle(
@@ -437,7 +450,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                               height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: h(14)),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
@@ -458,10 +471,19 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: h(14)),
+                          if (!_isAddressResolved) ...[
+                            TextButton(
+                              onPressed: _isAddressLoading
+                                  ? null
+                                  : () => _updateAddressFromLatLng(_latitude, _longitude),
+                              child: const Text('주소 다시 확인'),
+                            ),
+                            SizedBox(height: h(6)),
+                          ],
                           PrimaryButton(
                             text: '이 위치로 주소 등록',
-                            onPressed: _isPermissionDenied
+                            onPressed: _isPermissionDenied || !_isAddressResolved
                                 ? null
                                 : _confirmLocation,
                             isLoading: _isSubmitting,

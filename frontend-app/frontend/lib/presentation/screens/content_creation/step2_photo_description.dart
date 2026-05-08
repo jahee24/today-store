@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/providers/content_creation_provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/cards/photo_description_card.dart';
@@ -72,6 +73,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
     final contentState = ref.watch(contentCreationProvider);
     final images = contentState.images;
     final canProceed = _everyPhotoHasDescription(
@@ -83,14 +85,14 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
+          padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(18)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   BackArrowButton(onTap: _handleBack),
-                  const SizedBox(width: 14),
+                  SizedBox(width: h(12)),
                   Text(
                     '콘텐츠 만들기',
                     style: textTheme.headlineSmall?.copyWith(
@@ -100,14 +102,14 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: h(22)),
 
               const StepIndicatorLine(
                 currentStep: 2,
                 totalSteps: 4,
               ),
 
-              const SizedBox(height: 34),
+              SizedBox(height: h(28)),
 
               Text(
                 '사진을 설명해주세요',
@@ -116,7 +118,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: h(8)),
               Text(
                 'AI가 더 정확한 콘텐츠를 만들어요',
                 style: textTheme.bodyLarge?.copyWith(
@@ -125,7 +127,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: h(20)),
 
               Expanded(
                 child: SingleChildScrollView(
@@ -134,7 +136,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
                       ...List.generate(images.length, (index) {
                         return Padding(
                           padding: EdgeInsets.only(
-                            bottom: index == images.length - 1 ? 0 : 18,
+                            bottom: index == images.length - 1 ? 0 : h(14),
                           ),
                           child: PhotoDescriptionCard(
                             label: '사진 ${index + 1}',
@@ -148,7 +150,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
                         );
                       }),
 
-                      const SizedBox(height: 24),
+                      SizedBox(height: h(20)),
 
                       Align(
                         alignment: Alignment.centerLeft,
@@ -161,7 +163,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: h(8)),
 
                       RequestTextField(
                         controller: _extraRequestController,
@@ -176,7 +178,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: h(18)),
 
               PrimaryButton(
                 text: '다음 →',

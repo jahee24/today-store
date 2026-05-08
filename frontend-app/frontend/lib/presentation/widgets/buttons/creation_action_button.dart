@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 
 class CreationActionButton extends StatelessWidget {
   const CreationActionButton({
@@ -17,10 +18,13 @@ class CreationActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final buttonHeight = AppLayout.h(context, 52);
+    final labelSize = AppLayout.f(context, 17);
+    final horizontalPadding = AppLayout.h(context, 20);
 
     if (filled) {
       return SizedBox(
-        height: 52,
+        height: buttonHeight,
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
@@ -30,14 +34,14 @@ class CreationActionButton extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           ),
           child: Text(
             label,
             style: textTheme.bodyLarge?.copyWith(
               color: AppTheme.primaryColor,
               fontWeight: FontWeight.w700,
-              fontSize: 17,
+              fontSize: labelSize,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
@@ -48,7 +52,7 @@ class CreationActionButton extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 52,
+      height: buttonHeight,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
@@ -58,14 +62,14 @@ class CreationActionButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         ),
         child: Text(
           label,
           style: textTheme.bodyLarge?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w700,
-            fontSize: 17,
+            fontSize: labelSize,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,

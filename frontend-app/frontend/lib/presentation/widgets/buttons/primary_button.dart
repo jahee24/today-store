@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/constants.dart';
 
 // 다음으로, 다음->, AI 콘텐츠 생성하기, 공유하기-> 버튼
 class PrimaryButton extends StatelessWidget {
@@ -23,9 +24,11 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final adaptiveHeight = AppLayout.h(context, height);
+    final adaptiveFontSize = AppLayout.f(context, fontSize ?? 20);
     return SizedBox(
       width: double.infinity,
-      height: height,
+      height: adaptiveHeight,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         child: isLoading
@@ -48,7 +51,7 @@ class PrimaryButton extends StatelessWidget {
             Text(
               text,
               style: TextStyle(
-                fontSize: fontSize,
+                fontSize: adaptiveFontSize,
                 fontWeight: fontWeight,
               )
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 
 /// 공유 채널 선택 (딥링크·복사 등).
@@ -40,19 +41,21 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
+          padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(18)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   BackArrowButton(onTap: () => _handleBack(context)),
-                  const SizedBox(width: 14),
+                  SizedBox(width: h(12)),
                   Text(
                     '공유하기',
                     style: textTheme.headlineSmall?.copyWith(
@@ -62,7 +65,7 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: h(24)),
               Text(
                 '어디에 공유할까요?',
                 style: textTheme.headlineMedium?.copyWith(
@@ -71,7 +74,7 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                   height: 1.25,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: h(8)),
               Text(
                 '여러 플랫폼에 동시에 공유할 수 있어요',
                 style: textTheme.bodyLarge?.copyWith(
@@ -79,7 +82,7 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: h(20)),
               Expanded(
                 child: ListView(
                   children: [
@@ -118,7 +121,7 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                         onTap: () => setState(() => _selectedIndex = 0),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: h(12)),
                     MouseRegion(
                       onEnter: (_) => setState(() => _hoveredIndex = 1),
                       onExit: (_) => setState(() => _hoveredIndex = null),
@@ -150,7 +153,7 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                         onTap: () => setState(() => _selectedIndex = 1),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: h(12)),
                     MouseRegion(
                       onEnter: (_) => setState(() => _hoveredIndex = 2),
                       onExit: (_) => setState(() => _hoveredIndex = null),
@@ -188,7 +191,7 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                         onTap: () => setState(() => _selectedIndex = 2),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: h(12)),
                     MouseRegion(
                       onEnter: (_) => setState(() => _hoveredIndex = 3),
                       onExit: (_) => setState(() => _hoveredIndex = null),
@@ -228,10 +231,10 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: h(10)),
               SizedBox(
                 width: double.infinity,
-                height: 68,
+                height: h(62),
                 child: OutlinedButton(
                   onPressed: () => context.go('/dashboard'),
                   style: OutlinedButton.styleFrom(
@@ -244,7 +247,7 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                   child: Text(
                     '대시보드로 돌아가기',
                     style: textTheme.titleMedium?.copyWith(
-                      fontSize: 18,
+                      fontSize: f(18),
                       fontWeight: FontWeight.w700,
                       color: AppTheme.primaryColor,
                     ),

@@ -191,6 +191,86 @@ class RequestContentsResponse {
   }
 }
 
+class GenerationRequestDetailResponse {
+  final String id;
+  final List<GenerationRequestImage> images;
+
+  const GenerationRequestDetailResponse({
+    required this.id,
+    required this.images,
+  });
+
+  factory GenerationRequestDetailResponse.fromJson(Map<String, dynamic> json) {
+    final rawImages = (json['images'] as List<dynamic>? ?? const []);
+    return GenerationRequestDetailResponse(
+      id: (json['id'] ?? '').toString(),
+      images: rawImages
+          .whereType<Map<String, dynamic>>()
+          .map(GenerationRequestImage.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class GenerationRequestImage {
+  final String id;
+  final String url;
+
+  const GenerationRequestImage({
+    required this.id,
+    required this.url,
+  });
+
+  factory GenerationRequestImage.fromJson(Map<String, dynamic> json) {
+    return GenerationRequestImage(
+      id: (json['id'] ?? '').toString(),
+      url: (json['url'] ?? '').toString(),
+    );
+  }
+}
+
+class ImageVariationStartResponse {
+  final String requestId;
+  final String taskId;
+  final DateTime? startedAt;
+
+  const ImageVariationStartResponse({
+    required this.requestId,
+    required this.taskId,
+    this.startedAt,
+  });
+
+  factory ImageVariationStartResponse.fromJson(Map<String, dynamic> json) {
+    return ImageVariationStartResponse(
+      requestId: (json['requestId'] ?? '').toString(),
+      taskId: (json['taskId'] ?? '').toString(),
+      startedAt: json['startedAt'] != null
+          ? DateTime.tryParse(json['startedAt'].toString())
+          : null,
+    );
+  }
+}
+
+class ImageVariationItem {
+  final String id;
+  final String url;
+  final String angleType;
+
+  const ImageVariationItem({
+    required this.id,
+    required this.url,
+    required this.angleType,
+  });
+
+  factory ImageVariationItem.fromJson(Map<String, dynamic> json) {
+    return ImageVariationItem(
+      id: (json['id'] ?? '').toString(),
+      url: (json['url'] ?? '').toString(),
+      angleType: (json['angleType'] ?? '').toString(),
+    );
+  }
+}
+
 /// `GET /api/v1/contents/{contentId}` 응답.
 class ContentDetail {
   final String id;

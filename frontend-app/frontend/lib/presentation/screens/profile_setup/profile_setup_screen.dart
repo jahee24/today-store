@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../data/models/store_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/primary_button.dart';
@@ -67,12 +68,23 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   bool get _isStoreNameFilled => _storeNameController.text.trim().isNotEmpty;
   bool get _isBusinessTypeFilled => selectedBusinessType != null;
   bool get _isAddressFilled => _addressController.text.trim().isNotEmpty;
+  bool get _isAddressMeaningful {
+    final trimmed = _addressController.text.trim();
+    if (trimmed.isEmpty) return false;
+    const invalidAddressPlaceholders = {
+      '선택한 위치',
+      '주소를 불러오는 중...',
+    };
+    return !invalidAddressPlaceholders.contains(trimmed);
+  }
   bool get _isLocationFilled => _latitude != null && _longitude != null;
   bool get _isStyleFilled => selectedStyle != null;
 
   bool get _isStoreNameError => _showValidation && !_isStoreNameFilled;
   bool get _isBusinessTypeError => _showValidation && !_isBusinessTypeFilled;
-  bool get _isAddressError => _showValidation && (!_isAddressFilled || !_isLocationFilled);
+  bool get _isAddressError =>
+      _showValidation &&
+      (!_isAddressFilled || !_isAddressMeaningful || !_isLocationFilled);
 
   int get _currentStepCount {
     int count = 0;
@@ -85,7 +97,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   bool get _canGoNext {
-    return _isStoreNameFilled && _isBusinessTypeFilled && _isAddressFilled && _isLocationFilled;
+    return _isStoreNameFilled &&
+        _isBusinessTypeFilled &&
+        _isAddressFilled &&
+        _isAddressMeaningful &&
+        _isLocationFilled;
   }
 
   void _prefillFromStore(StoreProfileModel store) {
@@ -143,29 +159,42 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     final notifier = ref.read(storeProvider.notifier);
     if (isEditMode) {
       final original = _originalStoreProfile;
+      if (original == null) {
+        // Forced dashboard entry can send first-time users into edit mode.
+        // In that case, persist the form as a new store profile.
+        notifier.createStore(
+          storeName: _storeNameController.text.trim(),
+          businessType: selectedBusinessType!,
+          address: _addressController.text.trim(),
+          latitude: _latitude!,
+          longitude: _longitude!,
+          preferredStyleLabel: selectedStyle,
+        );
+        return;
+      }
       final trimmedStoreName = _storeNameController.text.trim();
       final trimmedAddress = _addressController.text.trim();
       final changedStoreName =
-          original != null && trimmedStoreName != original.storeName.trim()
+          trimmedStoreName != original.storeName.trim()
               ? trimmedStoreName
               : null;
       final changedBusinessType =
-          original != null && selectedBusinessType != original.businessType
+          selectedBusinessType != original.businessType
               ? selectedBusinessType
               : null;
       final changedAddress =
-          original != null && trimmedAddress != original.address.trim()
+          trimmedAddress != original.address.trim()
               ? trimmedAddress
               : null;
-      final changedLatitude = original != null && _latitude != null && _latitude != original.latitude
+      final changedLatitude = _latitude != null && _latitude != original.latitude
           ? _latitude
           : null;
-      final changedLongitude = original != null && _longitude != null && _longitude != original.longitude
+      final changedLongitude = _longitude != null && _longitude != original.longitude
           ? _longitude
           : null;
       final currentPreferredStyleApi = _toPreferredStyleApiValue(selectedStyle);
       final changedPreferredStyle =
-          original != null && currentPreferredStyleApi != original.preferredStyle
+          currentPreferredStyleApi != original.preferredStyle
               ? selectedStyle
               : null;
 
@@ -221,6 +250,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     final storeState = ref.watch(storeProvider);
     final isEditMode = GoRouterState.of(context).uri.queryParameters['mode'] == 'edit';
     final storeProfileAsync = isEditMode ? ref.watch(currentStoreProfileProvider) : null;
@@ -263,10 +294,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       backgroundColor: AppTheme.surfaceColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: h(20)),
           child: Column(
             children: [
-              const SizedBox(height: 16),
+              SizedBox(height: h(14)),
               Row(
                 children: [
                   if (isEditMode) ...[
@@ -277,12 +308,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       ),
                       icon: const Icon(Icons.arrow_back_rounded),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: h(8)),
                   ],
                   Text(
                     isEditMode ? '가게 정보 수정' : '가게 등록',
                     style: textTheme.headlineSmall?.copyWith(
-                      fontSize: 23,
+                      fontSize: f(23),
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
                       letterSpacing: 0,
@@ -292,26 +323,26 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   Text(
                     '$_currentStepCount/4',
                     style: textTheme.titleMedium?.copyWith(
-                      fontSize: 17,
+                      fontSize: f(17),
                       fontWeight: FontWeight.w500,
                       color: AppTheme.textTertiary,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: h(14)),
               Row(
                 children: [
                   _buildStepBar(isActive: _isStoreNameFilled),
-                  const SizedBox(width: 8),
+                  SizedBox(width: h(8)),
                   _buildStepBar(isActive: _isBusinessTypeFilled),
-                  const SizedBox(width: 8),
+                  SizedBox(width: h(8)),
                   _buildStepBar(isActive: _isAddressFilled && _isLocationFilled),
-                  const SizedBox(width: 8),
+                  SizedBox(width: h(8)),
                   _buildStepBar(isActive: _isStyleFilled),
                 ],
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: h(24)),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -320,7 +351,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       Text(
                         '우리 가게 정보를\n알려주세요 🏪',
                         style: textTheme.headlineLarge?.copyWith(
-                          fontSize: 29,
+                          fontSize: f(29),
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textPrimary,
                           height: 1.3,
@@ -328,34 +359,34 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 26),
+                      SizedBox(height: h(22)),
                       _buildSectionLabel(
                         title: '상호명 *',
                         showError: _isStoreNameError,
                       ),
 
-                      const SizedBox(height: 7),
+                      SizedBox(height: h(6)),
                       _buildTextField(
                         controller: _storeNameController,
                         focusNode: _storeNameFocusNode,
                         hintText: '예) 맛있는 카페',
                         hasError: _isStoreNameError,
                       ),
-                      const SizedBox(height: 26),
+                      SizedBox(height: h(22)),
 
                       _buildSectionLabel(
                         title: '업종 *',
                         showError: _isBusinessTypeError,
                       ),
-                      const SizedBox(height: 7),
+                      SizedBox(height: h(6)),
                       _buildBusinessTypeWrap(),
-                      const SizedBox(height: 26),
+                      SizedBox(height: h(22)),
 
                       _buildSectionLabel(
                         title: '주소 *',
                         showError: _isAddressError,
                       ),
-                      const SizedBox(height: 7),
+                      SizedBox(height: h(6)),
                       _buildTextField(
                         controller: _addressController,
                         focusNode: _addressFocusNode,
@@ -364,16 +395,16 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         readOnly: true,
                         onTap: _handleAddressSearch,
                       ),
-                      const SizedBox(height: 26),
+                      SizedBox(height: h(22)),
 
                       _buildSectionLabel(
                         title: '선호 스타일',
                         showError: false,
                       ),
-                      const SizedBox(height: 7),
+                      SizedBox(height: h(6)),
                       Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
+                        spacing: h(10),
+                        runSpacing: h(10),
                         children: styleOptions.map((style) {
                           final isSelected = selectedStyle == style;
                           return _buildChoiceChip(
@@ -387,12 +418,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           );
                         }).toList(),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: h(6)),
 
                       Text(
                         '콘텐츠의 기본 분위기를 선택해주세요',
                         style: textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
+                          fontSize: f(14),
                           color: AppTheme.textTertiary,
                         ),
                       ),
@@ -400,7 +431,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: h(18)),
 
               PrimaryButton(
                 text: isEditMode ? '저장' : '다음으로',
@@ -408,17 +439,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 isLoading: storeState.isLoading,
               ),
               if (isEditMode && storeProfileAsync!.isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
+                Padding(
+                  padding: EdgeInsets.only(top: h(8)),
                   child: Text(
                     '기존 가게 정보를 불러오는 중이에요...',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: f(13),
                       color: AppTheme.textTertiary,
                     ),
                   ),
                 ),
-              const SizedBox(height: 16),
+              SizedBox(height: h(14)),
             ],
           ),
         ),
@@ -429,7 +460,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget _buildStepBar({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 5,
+        height: AppLayout.h(context, 5),
         decoration: BoxDecoration(
           color: isActive ? AppTheme.primaryColor : AppTheme.progressInactive,
           borderRadius: BorderRadius.circular(999),
@@ -458,9 +489,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         if (showError) ...[
           const SizedBox(width: 8),
           Text(
-            '필수 항목을 채워주세요',
+            title.startsWith('주소')
+                ? '지도에서 정확한 주소를 선택해주세요'
+                : '필수 항목을 채워주세요',
             style: textTheme.bodyMedium?.copyWith(
-              fontSize: 12,
+              fontSize: AppLayout.f(context, 12),
               fontWeight: FontWeight.w600,
               color: AppTheme.dangerText,
             ),

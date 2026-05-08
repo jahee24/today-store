@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
+import '../../../../config/constants.dart';
 
 // 스타일 옵션 선택 카드
 class StyleOptionCard extends StatelessWidget {
@@ -24,6 +25,8 @@ class StyleOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
     final borderColor = isSelected
     ? AppTheme.primaryColor
     : AppTheme.borderColor;
@@ -34,15 +37,15 @@ class StyleOptionCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(h(22)),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+        padding: EdgeInsets.fromLTRB(h(20), h(20), h(20), h(20)),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(h(22)),
           border: Border.all(
             color: borderColor,
             width: isSelected ? 2.6 : 1.2,
@@ -66,14 +69,14 @@ class StyleOptionCard extends StatelessWidget {
                     children: [
                       Text(
                         emoji,
-                        style: const TextStyle(fontSize: 22),
+                        style: TextStyle(fontSize: f(22)),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: h(10)),
                       Expanded(
                         child: Text(
                           title,
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontSize: 22,
+                                fontSize: f(22),
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.textPrimary,
                               ),
@@ -81,42 +84,42 @@ class StyleOptionCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: h(10)),
                   Text(
                     description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontSize: 16,
+                          fontSize: f(16),
                           color: AppTheme.textSecondary,
                           fontWeight: FontWeight.w500,
                           height: 1.45,
                         ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: h(2)),
                   Text(
                     details,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontSize: 16,
+                          fontSize: f(16),
                           color: AppTheme.textSecondary,
                           fontWeight: FontWeight.w500,
                           height: 1.45,
                         ),
                   ),
                   if (isSelected && exampleText != null) ...[
-                    const SizedBox(height: 18),
+                    SizedBox(height: h(14)),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: h(14),
+                        vertical: h(14),
                       ),
                       decoration: BoxDecoration(
                         color: exampleBgColor,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(h(14)),
                       ),
                       child: Text(
                         exampleText!,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontSize: 15,
+                              fontSize: f(15),
                               fontStyle: FontStyle.italic,
                               color: const Color(0xFF6E6E78),
                               fontWeight: FontWeight.w500,
@@ -128,7 +131,7 @@ class StyleOptionCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: h(12)),
             _SelectionIndicator(isSelected: isSelected),
           ],
         ),
@@ -146,23 +149,24 @@ class _SelectionIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = (double v) => AppLayout.h(context, v);
     return Container(
-      width: 32,
-      height: 32,
+      width: h(30),
+      height: h(30),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
           color: isSelected
               ? AppTheme.primaryColor
               : AppTheme.borderStrongColor,
-          width: 2.6,
+          width: h(2.4),
         ),
       ),
       child: isSelected
           ? Center(
               child: Container(
-                width: 16,
-                height: 16,
+                width: h(14),
+                height: h(14),
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppTheme.primaryColor,
