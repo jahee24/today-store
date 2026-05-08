@@ -47,6 +47,20 @@ public class GcsService {
         }
     }
 
+    public String uploadFile(byte[] bytes, String contentType, String folder, String filename) {
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String uuid = UUID.randomUUID().toString();
+        String objectName = String.format("%s/%s/%s_%s",
+                datePath, folder, uuid, filename);
+
+        BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectName)
+                .setContentType(contentType)
+                .build();
+        storage.create(blobInfo, bytes);
+        log.info("Successfully uploaded byte array to GCS. ID: {}", uuid);
+        return objectName;
+    }
+
     public String generateSignedUrl(String objectName) {
         if (objectName == null || objectName.isEmpty()) {
             return null;

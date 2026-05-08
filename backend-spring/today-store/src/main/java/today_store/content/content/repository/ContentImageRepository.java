@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ContentImageRepository extends JpaRepository<ContentImage, UUID> {
-    List<ContentImage> findByContentOrderByCreatedAtAsc(Content content);
     List<ContentImage> findByContentId(UUID uuid);
+    List<ContentImage> findByContentOrderByCreatedAtAsc(Content content);
+    List<ContentImage> findByContentOrderByDisplayOrderAsc(Content content);
+    void deleteByContent(Content content);
 }

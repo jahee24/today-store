@@ -68,6 +68,11 @@ app:
     api-key: test_gemini_key
     model: "gemini-3-flash-preview"
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
+  runcomfy:
+    api-key: "test-runcomfy-key"
+    deployment-id: "test-runcomfy-deployment-id"
+    endpoint: "https://api.runcomfy.net"
+    webhook-url: "test-webhook-url"
 
 instagram:
   app-id: "instagram-app-id"

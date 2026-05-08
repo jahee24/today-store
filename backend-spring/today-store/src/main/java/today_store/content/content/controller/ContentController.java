@@ -95,4 +95,36 @@ public class ContentController {
         User user = userService.getUser(authentication);
         contentService.deleteContent(user, contentId);
     }
+
+    @PatchMapping("/{contentId}/images")
+    @RateLimit(tier = RateLimitTier.MIDDLE)
+    public ContentResponse updateContentImages(
+            @PathVariable UUID contentId,
+            @Valid @RequestBody UpdateContentImagesRequest request,
+            Authentication authentication) {
+
+        User user = userService.getUser(authentication);
+        return contentService.updateContentImages(user, contentId, request);
+    }
+
+    @PostMapping("/images/{inputImageId}/vary")
+    @RateLimit(tier = RateLimitTier.HIGH)
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public GenerateContentResponse varyImage(
+            @PathVariable UUID inputImageId,
+            Authentication authentication) {
+
+        User user = userService.getUser(authentication);
+        return contentService.initiateVariation(user, inputImageId);
+    }
+
+    @GetMapping("/images/{inputImageId}/variations")
+    @RateLimit(tier = RateLimitTier.LOW)
+    public java.util.List<InputImageVariationResponse> getImageVariations(
+            @PathVariable UUID inputImageId,
+            Authentication authentication) {
+
+        User user = userService.getUser(authentication);
+        return contentService.getImageVariations(user, inputImageId);
+    }
 }

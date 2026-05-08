@@ -10,12 +10,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "content_images")
+@Table(name = "input_image_variations")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class ContentImage {
+public class InputImageVariation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -23,24 +23,17 @@ public class ContentImage {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "content_id", nullable = false)
-    private Content content;
-
-    @Column(name = "input_image_id", nullable = false)
-    private UUID inputImageId;
+    @JoinColumn(name = "input_image_id", nullable = false)
+    private InputImage inputImage;
 
     @Column(nullable = false, length = 500)
     private String url;
 
-    @Column(name = "display_order", nullable = false)
-    @Builder.Default
-    private Integer displayOrder = 0;
+    @Column(name = "angle_type", length = 50)
+    private String angleType;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    public void updateDisplayOrder(int displayOrder) {
-        this.displayOrder = displayOrder;
-    }
 }
+
