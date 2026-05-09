@@ -79,4 +79,9 @@ public class User {
         }
     }
 
+    public void updateEmail(String email) {
+        if (email != null && !email.isBlank()) {
+            this.email = email;
+        }
+    }
 }
