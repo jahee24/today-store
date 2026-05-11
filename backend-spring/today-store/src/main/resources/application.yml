@@ -24,7 +24,7 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 30MB
-  
+
   ai:
     model:
       chat: none
@@ -85,6 +85,11 @@ app:
     api-key: ${GEMINI_API_KEY}
     model: "gemini-3.1-flash-lite-preview"
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
+  runcomfy:
+    api-key: ${RUNCOMFY_API_KEY}
+    deployment-id: ${RUNCOMFY_DEPLOYMENT_ID}
+    endpoint: "https://api.runcomfy.net"
+    webhook-url: ${RUNCOMFY_WEBHOOK_URL}
 
 instagram:
   app-id: ${INSTAGRAM_APP_ID}

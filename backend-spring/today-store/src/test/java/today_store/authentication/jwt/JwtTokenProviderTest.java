@@ -32,6 +32,25 @@ class JwtTokenProviderTest {
     }
 
     @Test
+    @DisplayName("같은 인증 정보로 연속 생성한 리프레시 토큰 고유성 보장")
+    void shouldCreateUniqueRefreshTokensForSameAuthentication() {
+        // 같은 인증 정보로 즉시 연속 발급해도 리프레시 토큰은 서로 달라야 한다.
+
+        // given
+        JwtTokenProvider tokenProvider = createTokenProvider(60L, 120L);
+        Authentication authentication = createAuthentication();
+
+        // when
+        String first = tokenProvider.createRefreshToken(authentication);
+        String second = tokenProvider.createRefreshToken(authentication);
+
+        // then
+        assertThat(first).isNotEqualTo(second);
+        assertThat(tokenProvider.validateToken(first)).isTrue();
+        assertThat(tokenProvider.validateToken(second)).isTrue();
+    }
+
+    @Test
     @DisplayName("토큰에서 인증 정보 복원")
     void shouldExtractAuthenticationWhenTokenIsValid() {
         // 유효한 토큰이 있으면 subject와 권한 정보를 다시 인증 객체로 복원해야 한다.

@@ -1,0 +1,1 @@
+ALTER TABLE content_images ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0;

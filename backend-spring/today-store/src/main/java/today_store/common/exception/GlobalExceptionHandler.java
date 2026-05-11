@@ -3,6 +3,7 @@ package today_store.common.exception;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -58,6 +59,21 @@ public class GlobalExceptionHandler {
                 .message(errorCode.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
+        return new ResponseEntity<>(response, errorCode.getStatus());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    protected ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.warn("HttpMessageNotReadableException: {}", e.getMessage());
+
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY_FORMAT;
+        ErrorResponse response = ErrorResponse.builder()
+                .status(errorCode.getStatus().value())
+                .code(errorCode.getCode())
+                .message(errorCode.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
         return new ResponseEntity<>(response, errorCode.getStatus());
     }
 

@@ -1,6 +1,7 @@
 package today_store.store.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import today_store.authentication.entity.User;
@@ -43,8 +44,12 @@ public class StoreService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        Store savedStore = storeRepository.save(store);
-        return CreateStoreResponse.from(savedStore);
+        try {
+            Store savedStore = storeRepository.saveAndFlush(store);
+            return CreateStoreResponse.from(savedStore);
+        } catch (DataIntegrityViolationException e) {
+            throw new StoreAlreadyExistException();
+        }
     }
 
     @Transactional(readOnly = true)

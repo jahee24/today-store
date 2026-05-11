@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
@@ -20,12 +22,11 @@ import today_store.common.gcs.GcsService;
 import today_store.common.gemini.dto.GeminiPromptRequest;
 import today_store.common.gemini.dto.GeminiRegenerationRequest;
 import today_store.common.gemini.service.GeminiService;
+import today_store.common.runcomfy.service.RunComfyService;
 import today_store.content.content.dto.*;
 import today_store.content.content.entity.*;
-import today_store.content.content.repository.ApiLogRepository;
-import today_store.content.content.repository.ContentImageRepository;
-import today_store.content.content.repository.ContentPostRepository;
-import today_store.content.content.repository.ContentRepository;
+import today_store.content.content.exception.EmptyImageListException;
+import today_store.content.content.repository.*;
 import today_store.content.request.entity.GenerationRequest;
 import today_store.content.request.entity.InputImage;
 import today_store.content.request.repository.GenerationRequestRepository;
@@ -43,10 +44,7 @@ import today_store.authentication.exception.UserNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,10 +57,12 @@ public class ContentService {
     private final ApiLogRepository apiLogRepository;
     private final GenerationRequestRepository requestRepository;
     private final InputImageRepository inputImageRepository;
+    private final InputImageVariationRepository inputImageVariationRepository;
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
     private final ContentPostRepository contentPostRepository;
     private final GeminiService geminiService;
+    private final RunComfyService runComfyService;
     private final GcsService gcsService;
     private final TransactionTemplate transactionTemplate;
     private final GeminiConfig geminiConfig;
@@ -76,7 +76,6 @@ public class ContentService {
             throw new AccessDeniedToResourceException();
         }
 
-        // Create ApiLog for tracking
         ApiLog apiLog = ApiLog.builder()
                 .generationRequest(request)
                 .model(geminiConfig.getModel())
@@ -84,8 +83,6 @@ public class ContentService {
                 .build();
 
         ApiLog savedLog = apiLogRepository.save(apiLog);
-
-        // Start generation in background
         generateContentAsync(request.getId(), savedLog.getId());
 
         return GenerateContentResponse.builder()
@@ -289,6 +286,103 @@ public class ContentService {
     }
 
     @Transactional
+    public ContentResponse updateContentImages(User user, UUID contentId, UpdateContentImagesRequest request) {
+        if (request.getImages() == null || request.getImages().isEmpty()) {
+            throw new EmptyImageListException();
+        }
+
+        Content content = contentRepository.findByIdAndIsDeletedFalse(contentId).orElseThrow(ContentNotFoundException::new);
+        if (!content.getGenerationRequest().getUser().getId().equals(user.getId())) throw new AccessDeniedToResourceException();
+
+        // 1. Collect current URLs for potential cleanup
+        List<ContentImage> currentImages = contentImageRepository.findByContentOrderByDisplayOrderAsc(content);
+        Set<String> urlsBeforeUpdate = currentImages.stream()
+                .map(ContentImage::getUrl)
+                .collect(Collectors.toSet());
+
+        // 기존 이미지 정보를 맵에 저장 (EXISTING 타입 재사용을 위함)
+        Map<UUID, ContentImage> existingImagesMap = currentImages.stream()
+                .collect(Collectors.toMap(ContentImage::getId, img -> img));
+
+        // 기존 매핑 삭제
+        contentImageRepository.deleteByContent(content);
+
+        Set<String> urlsToKeep = new HashSet<>();
+        int order = 0;
+        for (UpdateContentImagesRequest.ImageSourceItem item : request.getImages()) {
+            String urlToSnapshot;
+            UUID inputImageId;
+
+            switch (item.getType()) {
+                case EXISTING:
+                    ContentImage existing = existingImagesMap.get(item.getId());
+                    if (existing == null) {
+                        throw new AccessDeniedToResourceException();
+                    }
+                    urlToSnapshot = existing.getUrl();
+                    inputImageId = existing.getInputImageId();
+                    break;
+                case VARIATION:
+                    InputImageVariation variation = inputImageVariationRepository.findById(item.getId())
+                            .orElseThrow(() -> new RuntimeException("Variation not found: " + item.getId()));
+
+                    // Ownership check: variation must belong to the same generation request as the content
+                    if (!variation.getInputImage().getGenerationRequest().getId().equals(content.getGenerationRequest().getId())) {
+                        throw new AccessDeniedToResourceException();
+                    }
+
+                    urlToSnapshot = variation.getUrl();
+                    inputImageId = variation.getInputImage().getId();
+                    break;
+                case ORIGINAL:
+                    InputImage original = inputImageRepository.findById(item.getId())
+                            .orElseThrow(() -> new RuntimeException("Original image not found: " + item.getId()));
+
+                    // Ownership check: original image must belong to the same generation request as the content
+                    if (!original.getGenerationRequest().getId().equals(content.getGenerationRequest().getId())) {
+                        throw new AccessDeniedToResourceException();
+                    }
+
+                    urlToSnapshot = original.getUrl();
+                    inputImageId = original.getId();
+                    break;
+                default: continue;
+            }
+
+            String finalUrl = urlToSnapshot.startsWith("contents/") ? urlToSnapshot : gcsService.copyFile(urlToSnapshot, "contents");
+            urlsToKeep.add(finalUrl);
+
+            ContentImage newImg = ContentImage.builder().content(content).inputImageId(inputImageId).url(finalUrl).displayOrder(order++).build();
+            contentImageRepository.save(newImg);
+        }
+
+        // 2. Identify URLs to delete (those that were present but are no longer used)
+        Set<String> urlsToDelete = new HashSet<>(urlsBeforeUpdate);
+        urlsToDelete.removeAll(urlsToKeep);
+
+        // 3. Register GCS cleanup after transaction commit
+        if (!urlsToDelete.isEmpty()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("Transaction committed. Cleaning up {} unused GCS files for content {}", urlsToDelete.size(), contentId);
+                    urlsToDelete.forEach(url -> {
+                        try {
+                            gcsService.deleteFile(url);
+                        } catch (Exception e) {
+                            log.error("Failed to delete GCS file after commit: {}", url);
+                        }
+                    });
+                }
+            });
+        }
+
+        List<ContentImage> updatedImages = contentImageRepository.findByContentOrderByDisplayOrderAsc(content);
+        boolean isPosted = contentPostRepository.existsByContentAndStatus(content, PublishStatus.COMPLETED);
+        return ContentResponse.from(content, updatedImages, isPosted, gcsService::generateSignedUrl);
+    }
+
+    @Transactional
     public GenerateContentResponse startRegeneration(User user, UUID contentId, RegenerateContentRequest request) {
         Content originalContent = contentRepository.findByIdAndIsDeletedFalse(contentId)
                 .orElseThrow(ContentNotFoundException::new);
@@ -432,5 +526,48 @@ public class ContentService {
                 .multiply(new BigDecimal("3.00"))
                 .divide(new BigDecimal("1000000"), 10, RoundingMode.HALF_UP);
         return inputCost.add(outputCost);
+    }
+
+    @Transactional
+    public GenerateContentResponse initiateVariation(User user, UUID inputImageId) {
+        InputImage inputImage = inputImageRepository.findById(inputImageId).orElseThrow(
+                () -> new RuntimeException("Input image not found"));
+
+        if (!inputImage.getGenerationRequest().getUser().getId().equals(user.getId()))
+            throw new AccessDeniedToResourceException();
+
+        ApiLog apiLog = ApiLog.builder()
+                .generationRequest(inputImage.getGenerationRequest())
+                .model("COMFY_UI_VARIATION_V1")
+                .status(ApiStatus.PROCESSING)
+                .build();
+
+        ApiLog savedLog = apiLogRepository.save(apiLog);
+        String signedUrl = gcsService.generateSignedUrl(inputImage.getUrl());
+        runComfyService.requestVariation(signedUrl, savedLog.getId().toString(), inputImageId.toString())
+                .subscribe(response -> {
+                    log.info("Successfully initiated RunComfy variation: {}", response.getRequestId());
+                    transactionTemplate.execute(status -> {
+                        ApiLog logToUpdate = apiLogRepository.findById(savedLog.getId()).orElseThrow();
+                        logToUpdate.updateExternalRequestId(response.getRequestId());
+                        return apiLogRepository.save(logToUpdate);
+                    });
+                }, error -> {
+                    log.error("Failed to initiate RunComfy variation for apiLogId: {}", savedLog.getId());
+                    transactionTemplate.execute(status -> {
+                        ApiLog logToUpdate = apiLogRepository.findById(savedLog.getId()).orElseThrow();
+                        logToUpdate.completeError("Failed to initiate: " + error.getMessage());
+                        return apiLogRepository.save(logToUpdate);
+                    });
+                });
+
+        return GenerateContentResponse.builder().requestId(inputImage.getGenerationRequest().getId()).taskId(savedLog.getId()).startedAt(LocalDateTime.now()).build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<InputImageVariationResponse> getImageVariations(User user, UUID inputImageId) {
+        InputImage inputImage = inputImageRepository.findById(inputImageId).orElseThrow(() -> new RuntimeException("Input image not found"));
+        if (!inputImage.getGenerationRequest().getUser().getId().equals(user.getId())) throw new AccessDeniedToResourceException();
+        return inputImageVariationRepository.findByInputImageOrderByCreatedAtAsc(inputImage).stream().map(v -> InputImageVariationResponse.from(v, gcsService::generateSignedUrl)).collect(Collectors.toList());
     }
 }

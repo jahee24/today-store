@@ -18,6 +18,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.test.util.ReflectionTestUtils;
 import today_store.authentication.entity.User;
+import today_store.authentication.jwt.JwtTokenProvider;
+import today_store.authentication.repository.RefreshTokenRepository;
 import today_store.authentication.repository.UserRepository;
 import today_store.common.exception.CustomException;
 import today_store.common.exception.ErrorCode;
@@ -32,11 +34,17 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository);
+        userService = new UserService(userRepository, jwtTokenProvider, refreshTokenRepository);
     }
 
     @Test
