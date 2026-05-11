@@ -363,7 +363,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildRecentCard(BuildContext context, ContentRequestItem item) {
-    final isImage = item.imageCount > 0;
+    final isImage = item.concept.trim() == '이미지 베리에이션';
     return RecentContentCard(
       title: item.concept.isNotEmpty ? item.concept : '제목 없음',
       subtitle: '${_formatRelative(item.createdAt)} · ${item.imageCount}장',
@@ -371,6 +371,7 @@ class DashboardScreen extends ConsumerWidget {
       badgeTextColor: isImage ? const Color(0xFF5B9B4C) : AppTheme.primaryColor,
       badgeBgColor: isImage ? const Color(0xFFEAF6E5) : const Color(0xFFEEEAFE),
       thumbnailEmoji: isImage ? '🎨' : '📸',
+      thumbnailUrl: item.thumbnailUrl,
       thumbnailBgColor: isImage ? const Color(0xFFE6F2F5) : AppTheme.fillLight,
       onTap: () => context.push('/history'),
     );

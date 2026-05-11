@@ -1,24 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
+import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 
 /// 공유 채널 선택 (딥링크·복사 등).
-class ShareOptionsScreen extends StatefulWidget {
+class ShareOptionsScreen extends ConsumerStatefulWidget {
   const ShareOptionsScreen({super.key});
 
   @override
-  State<ShareOptionsScreen> createState() => _ShareOptionsScreenState();
+  ConsumerState<ShareOptionsScreen> createState() => _ShareOptionsScreenState();
 }
 
-class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
+class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
+  static const MethodChannel _shareChannel = MethodChannel('today_store/share');
+
   /// 사용자가 탭하기 전까지는 강조 없음 (당근·네이버와 동일한 기본 테두리).
   int? _selectedIndex;
 
   /// 데스크톱·웹 호버 시 해당 카드만 대표색 테두리.
   int? _hoveredIndex;
+  bool _isInstagramSharing = false;
 
   bool _primaryBorder(int index) {
     if (_hoveredIndex != null) {
@@ -35,6 +45,72 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
       context.pop();
     } else {
       context.go('/dashboard');
+    }
+  }
+
+  Future<void> _shareToInstagram() async {
+    if (_isInstagramSharing) return;
+    setState(() => _isInstagramSharing = true);
+    try {
+      final contentId = GoRouterState.of(context).uri.queryParameters['contentId'] ?? '';
+      if (contentId.trim().isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('공유할 콘텐츠 정보를 찾을 수 없어요.')),
+        );
+        return;
+      }
+
+      final repository = ref.read(contentRepositoryProvider);
+      final detail = await repository.getContent(contentId: contentId.trim());
+      final imageUrl = detail.images.isNotEmpty ? detail.images.first.url.trim() : '';
+      if (imageUrl.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('공유할 이미지가 없어요.')),
+        );
+        return;
+      }
+
+      final bytes = await repository.contentApi.dio
+          .get<List<int>>(imageUrl, options: Options(responseType: ResponseType.bytes))
+          .then((res) => res.data);
+      if (bytes == null || bytes.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미지를 불러오지 못했어요.')),
+        );
+        return;
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}${Platform.pathSeparator}today_store_instagram_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+
+      final openedInstagram = await _shareChannel.invokeMethod<bool>(
+            'shareImageToInstagram',
+            {'filePath': file.path},
+          ) ??
+          false;
+      if (openedInstagram) {
+        return;
+      }
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Today Store에서 만든 콘텐츠예요',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Instagram 공유 중 오류가 발생했어요.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isInstagramSharing = false);
+      }
     }
   }
 
@@ -118,7 +194,10 @@ class _ShareOptionsScreenState extends State<ShareOptionsScreen> {
                             ),
                           ),
                         ),
-                        onTap: () => setState(() => _selectedIndex = 0),
+                        onTap: () async {
+                          setState(() => _selectedIndex = 0);
+                          await _shareToInstagram();
+                        },
                       ),
                     ),
                     SizedBox(height: h(12)),

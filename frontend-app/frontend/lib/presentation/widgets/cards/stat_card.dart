@@ -22,10 +22,10 @@ class StatCard extends StatelessWidget {
     final f = (double v) => AppLayout.f(context, v);
 
     return Container(
-      width: h(124),
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
-        vertical: h(20),
-        horizontal: h(14),
+        vertical: h(16),
+        horizontal: h(10),
       ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
@@ -50,14 +50,24 @@ class StatCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: h(6)),
-          Text(
-            label,
-            style: textTheme.bodyMedium?.copyWith(
-              fontSize: f(15),
-              color: AppTheme.textTertiary,
-              fontWeight: FontWeight.w500,
+          SizedBox(
+            width: double.infinity,
+            height: h(40),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontSize: f(14),
+                  color: AppTheme.textTertiary,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

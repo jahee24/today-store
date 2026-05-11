@@ -10,6 +10,7 @@ class RecentContentCard extends StatelessWidget {
   final Color badgeTextColor;
   final Color badgeBgColor;
   final String thumbnailEmoji;
+  final String? thumbnailUrl;
   final Color thumbnailBgColor;
   final VoidCallback? onTap;
 
@@ -21,6 +22,7 @@ class RecentContentCard extends StatelessWidget {
     required this.badgeTextColor,
     required this.badgeBgColor,
     this.thumbnailEmoji = '📸',
+    this.thumbnailUrl,
     this.thumbnailBgColor = AppTheme.fillLight,
     this.onTap,
   });
@@ -58,7 +60,10 @@ class RecentContentCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(h(16)),
               ),
               alignment: Alignment.center,
-              child: Text(thumbnailEmoji, style: TextStyle(fontSize: f(30))),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(h(16)),
+                child: _buildThumbnail(context, f),
+              ),
             ),
             SizedBox(width: h(12)),
             Expanded(
@@ -103,5 +108,20 @@ class RecentContentCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildThumbnail(BuildContext context, double Function(double) f) {
+    final url = thumbnailUrl?.trim() ?? '';
+    if (url.isNotEmpty) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) =>
+            Text(thumbnailEmoji, style: TextStyle(fontSize: f(30))),
+      );
+    }
+    return Text(thumbnailEmoji, style: TextStyle(fontSize: f(30)));
   }
 }

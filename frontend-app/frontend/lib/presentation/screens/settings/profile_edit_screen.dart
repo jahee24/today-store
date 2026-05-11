@@ -20,6 +20,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   bool _didPrefill = false;
   bool _isSaving = false;
   String _initialName = '';
+  String _initialEmail = '';
 
   @override
   void dispose() {
@@ -35,6 +36,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     }
     _didPrefill = true;
     _initialName = name;
+    _initialEmail = email;
     _nameController.text = name;
     _emailController.text = email;
   }
@@ -45,6 +47,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     }
 
     final trimmedName = _nameController.text.trim();
+    final trimmedEmail = _emailController.text.trim();
     if (trimmedName.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -52,10 +55,27 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       return;
     }
 
-    if (trimmedName == _initialName.trim()) {
+    if (trimmedEmail.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('변경된 이름이 없어요.')));
+      ).showSnackBar(const SnackBar(content: Text('이메일을 입력해 주세요.')));
+      return;
+    }
+
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailPattern.hasMatch(trimmedEmail)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('올바른 이메일 형식이 아니에요.')));
+      return;
+    }
+
+    final hasNameChanged = trimmedName != _initialName.trim();
+    final hasEmailChanged = trimmedEmail != _initialEmail.trim();
+    if (!hasNameChanged && !hasEmailChanged) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('변경된 내용이 없어요.')));
       return;
     }
 
@@ -65,9 +85,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      final updatedUser = await authRepository.updateMyProfile(name: trimmedName);
+      final updatedUser = await authRepository.updateMyProfile(
+        name: hasNameChanged ? trimmedName : null,
+        email: hasEmailChanged ? trimmedEmail : null,
+      );
       _initialName = updatedUser.name;
+      _initialEmail = updatedUser.email;
       _nameController.text = updatedUser.name;
+      _emailController.text = updatedUser.email;
 
       ref.invalidate(currentUserProvider);
 
@@ -184,14 +209,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       _ProfileTextField(
                         controller: _emailController,
                         hintText: '이메일',
-                        readOnly: true,
-                      ),
-                      SizedBox(height: h(6)),
-                      Text(
-                        '이메일은 변경할 수 없습니다',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textHint,
-                        ),
                       ),
                       SizedBox(height: h(16)),
                       _FieldLabel('전화번호 (선택)'),
@@ -240,13 +257,11 @@ class _ProfileTextField extends StatelessWidget {
   const _ProfileTextField({
     required this.controller,
     required this.hintText,
-    this.readOnly = false,
     this.keyboardType,
   });
 
   final TextEditingController controller;
   final String hintText;
-  final bool readOnly;
   final TextInputType? keyboardType;
 
   @override
@@ -254,7 +269,6 @@ class _ProfileTextField extends StatelessWidget {
     final h = (double v) => AppLayout.h(context, v);
     return TextField(
       controller: controller,
-      readOnly: readOnly,
       keyboardType: keyboardType,
       style: const TextStyle(
         fontSize: 20,

@@ -80,4 +80,10 @@ class ContentRepository {
   }) {
     return contentApi.deleteGenerationRequest(requestId: requestId);
   }
+
+  Future<void> deleteContent({
+    required String contentId,
+  }) {
+    return contentApi.deleteContent(contentId: contentId);
+  }
 }

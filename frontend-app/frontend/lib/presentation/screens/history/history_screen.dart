@@ -19,14 +19,18 @@ final historyRequestsProvider = FutureProvider<ContentRequestsResponse>((ref) {
 
 class _HistoryItem {
   const _HistoryItem({
+    required this.requestId,
     required this.title,
     required this.meta,
     required this.type,
+    required this.thumbnailUrl,
   });
 
+  final String requestId;
   final String title;
   final String meta;
   final _HistoryType type;
+  final String? thumbnailUrl;
 }
 
 class HistoryScreen extends ConsumerStatefulWidget {
@@ -42,16 +46,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   List<_HistoryItem> _buildFilteredItems(List<ContentRequestItem> requests) {
     final items = requests.map((request) {
-      final isImage = request.imageCount > 0;
+      final isImage = request.concept.trim() == '이미지 베리에이션';
       final type = isImage ? _HistoryType.image : _HistoryType.text;
       final title = request.concept.isNotEmpty ? request.concept : '제목 없음';
       final meta = isImage
           ? '${_formatRelative(request.createdAt)} · ${request.imageCount}장 생성'
           : '${_formatRelative(request.createdAt)} · 문구';
       return _HistoryItem(
+        requestId: request.requestId,
         title: title,
         meta: meta,
         type: type,
+        thumbnailUrl: request.thumbnailUrl,
       );
     }).toList();
 
@@ -68,12 +74,46 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }).toList();
   }
 
-  void _openItem(_HistoryItem item) {
-    if (item.type == _HistoryType.image) {
-      context.push('/image-result');
+  Future<void> _openItem(_HistoryItem item) async {
+    final requestId = item.requestId.trim();
+    if (requestId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('요청 정보를 찾을 수 없어요.')),
+      );
       return;
     }
-    context.push('/result');
+
+    try {
+      final repository = ref.read(contentRepositoryProvider);
+      final res = await repository.getRequestContents(requestId: requestId);
+      if (res.contents.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('아직 생성된 결과가 없어요.')),
+        );
+        return;
+      }
+
+      final latest = res.contents.first.contentId.trim();
+      if (latest.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('콘텐츠 정보를 불러오지 못했어요.')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      context.push(
+        '/result?requestId=${Uri.encodeComponent(requestId)}&contentId=${Uri.encodeComponent(latest)}',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('콘텐츠를 열지 못했어요.')),
+      );
+    }
   }
 
   void _selectFilter(_HistoryType? type) {
@@ -98,9 +138,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             children: [
               Text(
                 '콘텐츠 이력',
-                style: textTheme.headlineSmall?.copyWith(
+                style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
-                  fontSize: f(32),
+                  fontSize: f(22),
                 ),
               ),
               SizedBox(height: h(14)),
@@ -174,6 +214,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                               ? const Color(0xFFEAF6E5)
                               : const Color(0xFFEEEAFE),
                           thumbnailEmoji: isImage ? '🎨' : '📸',
+                          thumbnailUrl: item.thumbnailUrl,
                           thumbnailBgColor: isImage
                               ? const Color(0xFFE6F2F5)
                               : const Color(0xFFF7ECEA),
