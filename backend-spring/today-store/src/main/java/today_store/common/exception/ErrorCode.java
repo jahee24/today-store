@@ -21,6 +21,7 @@ public enum ErrorCode {
 
     // User
     INVALID_NAME_FORMAT(HttpStatus.BAD_REQUEST, "U001", "Invalid name format"),
+    EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "U002", "Email is already in use"),
 
     // Store
     STORE_REQUIRED_FIELDS_MISSING(HttpStatus.BAD_REQUEST, "S001", "Store name and business type are required"),
