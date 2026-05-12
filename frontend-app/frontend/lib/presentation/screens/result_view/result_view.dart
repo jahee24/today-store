@@ -1,10 +1,16 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
 import '../../../data/models/content_model.dart';
+import '../../../data/providers/content_creation_provider.dart';
 import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 import '../../widgets/buttons/primary_button.dart';
@@ -81,46 +87,54 @@ class ResultViewScreen extends ConsumerWidget {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(20)),
-          child: async.when(
-            loading: () => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BackArrowButton(onTap: () => _handleBack(context)),
-                const Expanded(
-                  child: Center(child: CircularProgressIndicator()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: async.when(
+                  loading: () => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BackArrowButton(onTap: () => _handleBack(context)),
+                      const Expanded(
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    ],
+                  ),
+                  error: (e, _) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BackArrowButton(onTap: () => _handleBack(context)),
+                      SizedBox(height: h(20)),
+                      Text(
+                        '결과를 불러오지 못했어요',
+                        style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        e.toString(),
+                        style: textTheme.bodyMedium?.copyWith(color: AppTheme.textTertiary),
+                      ),
+                    ],
+                  ),
+                  data: (detail) => _ResultBody(
+                    contentId: contentId.trim(),
+                    detail: detail,
+                    textTheme: textTheme,
+                    onBack: () => _handleBack(context),
+                    headlineFromBody: _headlineFromBody,
+                    generationLabel: _generationLabel,
+                    onShare: () {
+                      final id = contentId.trim();
+                      final path = id.isEmpty
+                          ? '/share'
+                          : '/share?contentId=${Uri.encodeComponent(id)}';
+                      context.push(path);
+                    },
+                  ),
                 ),
-              ],
-            ),
-            error: (e, _) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BackArrowButton(onTap: () => _handleBack(context)),
-                SizedBox(height: h(20)),
-                Text(
-                  '결과를 불러오지 못했어요',
-                  style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  e.toString(),
-                  style: textTheme.bodyMedium?.copyWith(color: AppTheme.textTertiary),
-                ),
-              ],
-            ),
-            data: (detail) => _ResultBody(
-              detail: detail,
-              textTheme: textTheme,
-              onBack: () => _handleBack(context),
-              headlineFromBody: _headlineFromBody,
-              generationLabel: _generationLabel,
-              onShare: () {
-                final id = contentId.trim();
-                final path = id.isEmpty
-                    ? '/share'
-                    : '/share?contentId=${Uri.encodeComponent(id)}';
-                context.push(path);
-              },
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -128,8 +142,9 @@ class ResultViewScreen extends ConsumerWidget {
   }
 }
 
-class _ResultBody extends StatelessWidget {
+class _ResultBody extends ConsumerStatefulWidget {
   const _ResultBody({
+    required this.contentId,
     required this.detail,
     required this.textTheme,
     required this.onBack,
@@ -138,6 +153,7 @@ class _ResultBody extends StatelessWidget {
     required this.onShare,
   });
 
+  final String contentId;
   final ContentDetail detail;
   final TextTheme textTheme;
   final VoidCallback onBack;
@@ -146,38 +162,174 @@ class _ResultBody extends StatelessWidget {
   final VoidCallback onShare;
 
   @override
+  ConsumerState<_ResultBody> createState() => _ResultBodyState();
+}
+
+class _ResultBodyState extends ConsumerState<_ResultBody> {
+  static const double _actionButtonHeight = 62;
+  bool _isPreparingRegenerate = false;
+
+  Future<void> _goToStep2ForRegenerate() async {
+    if (_isPreparingRegenerate) {
+      return;
+    }
+
+    setState(() => _isPreparingRegenerate = true);
+    try {
+      final requestId = widget.detail.requestId.trim();
+      if (requestId.isEmpty) {
+        if (mounted) {
+          context.push('/step2');
+        }
+        return;
+      }
+
+      final repository = ref.read(contentRepositoryProvider);
+      final requestDetail = await repository.getRequestDetail(requestId: requestId);
+      final imageUrls = requestDetail.images
+          .map((e) => e.url.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      final notifier = ref.read(contentCreationProvider.notifier);
+      final downloadedFiles = <XFile>[];
+      for (var i = 0; i < imageUrls.length; i++) {
+        final url = imageUrls[i];
+        final bytes = await repository.contentApi.dio
+            .get<List<int>>(url, options: Options(responseType: ResponseType.bytes))
+            .then((res) => res.data);
+        if (bytes == null || bytes.isEmpty) {
+          continue;
+        }
+        final tempDir = await getTemporaryDirectory();
+        final file = File(
+          '${tempDir.path}${Platform.pathSeparator}regen_source_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
+        );
+        await file.writeAsBytes(bytes, flush: true);
+        downloadedFiles.add(XFile(file.path));
+      }
+
+      notifier.setImages(downloadedFiles);
+      for (var i = 0; i < downloadedFiles.length; i++) {
+        final fromServer = i < requestDetail.imageDescriptions.length
+            ? requestDetail.imageDescriptions[i].trim()
+            : '';
+        notifier.setDescription(i, fromServer.isNotEmpty ? fromServer : '사진 ${i + 1}');
+      }
+      notifier.setExtraRequest(requestDetail.additionalNote);
+
+      final concept = requestDetail.concept.trim();
+      const allowedStyles = {'감성적', '정보제공', '전문성', '친근'};
+      if (allowedStyles.contains(concept)) {
+        notifier.setSelectedStyle(concept);
+      }
+
+      if (!mounted) {
+        return;
+      }
+      if (downloadedFiles.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이전 이미지가 없어 새로 선택해 주세요.')),
+        );
+      }
+      context.push('/step2');
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이전 입력값을 불러오지 못했어요. step2에서 다시 입력해 주세요.')),
+      );
+      context.push('/step2');
+    } finally {
+      if (mounted) {
+        setState(() => _isPreparingRegenerate = false);
+      }
+    }
+  }
+
+  Future<void> _deleteCurrentContent() async {
+    final contentId = widget.contentId.trim();
+    if (contentId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('삭제할 콘텐츠 정보를 찾을 수 없어요.')),
+      );
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('콘텐츠 삭제'),
+            content: const Text('이 콘텐츠를 삭제할까요?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('취소'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text(
+                  '삭제',
+                  style: TextStyle(color: AppTheme.dangerText),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!shouldDelete) return;
+
+    try {
+      final repository = ref.read(contentRepositoryProvider);
+      await repository.deleteContent(contentId: contentId);
+      ref.invalidate(dashboardDataProvider);
+      ref.invalidate(contentDetailProvider(contentId));
+      if (!mounted) return;
+      context.go('/history');
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('삭제 중 오류가 발생했어요.')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final h = (double v) => AppLayout.h(context, v);
     final f = (double v) => AppLayout.f(context, v);
-    final ig = detail.contentData.instagram;
-    final titleText = headlineFromBody(ig.text);
+    final ig = widget.detail.contentData.instagram;
+    final titleText = widget.headlineFromBody(ig.text);
     final bodyText = ig.text.trim().isEmpty ? '본문이 없어요.' : ig.text;
     final hashtags = ig.hashtagsLine;
-    final heroUrl = detail.images.isNotEmpty ? detail.images.first.url : '';
+    final heroUrl =
+        widget.detail.images.isNotEmpty ? widget.detail.images.first.url : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            BackArrowButton(onTap: onBack),
+            BackArrowButton(onTap: widget.onBack),
             SizedBox(width: h(12)),
-            Text(
-              '생성 결과',
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+            Expanded(
+              child: Text(
+                '생성 결과',
+                style: widget.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
               ),
             ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () {},
+            TextButton(
+              onPressed: _deleteCurrentContent,
               child: Text(
-                '수정',
-                style: textTheme.titleMedium?.copyWith(
-                  fontSize: 16,
+                '삭제',
+                style: widget.textTheme.titleSmall?.copyWith(
+                  color: AppTheme.dangerText,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryColor,
                 ),
               ),
             ),
@@ -191,8 +343,8 @@ class _ResultBody extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
           child: Text(
-            '✨ ${generationLabel(detail.generationType)}',
-            style: textTheme.titleMedium?.copyWith(
+            '✨ ${widget.generationLabel(widget.detail.generationType)}',
+            style: widget.textTheme.titleMedium?.copyWith(
               fontSize: f(16),
               fontWeight: FontWeight.w700,
               color: AppTheme.primaryColor,
@@ -254,7 +406,7 @@ class _ResultBody extends StatelessWidget {
                       children: [
                         Text(
                           titleText,
-                          style: textTheme.headlineSmall?.copyWith(
+                          style: widget.textTheme.headlineSmall?.copyWith(
                             fontSize: f(22),
                             fontWeight: FontWeight.w700,
                             color: AppTheme.textPrimary,
@@ -264,7 +416,7 @@ class _ResultBody extends StatelessWidget {
                         SizedBox(height: h(22)),
                         Text(
                           bodyText,
-                          style: textTheme.bodyLarge?.copyWith(
+                          style: widget.textTheme.bodyLarge?.copyWith(
                             fontSize: f(18),
                             fontWeight: FontWeight.w500,
                             color: AppTheme.textSecondary,
@@ -277,7 +429,7 @@ class _ResultBody extends StatelessWidget {
                           const SizedBox(height: 18),
                           Text(
                             hashtags,
-                            style: textTheme.bodyLarge?.copyWith(
+                            style: widget.textTheme.bodyLarge?.copyWith(
                               fontSize: f(17),
                               fontWeight: FontWeight.w500,
                               color: AppTheme.primaryColor,
@@ -287,15 +439,15 @@ class _ResultBody extends StatelessWidget {
                         ],
                         _PlatformExtra(
                           label: '당근',
-                          text: detail.contentData.karrot.text,
-                          tags: detail.contentData.karrot.hashtagsLine,
-                          textTheme: textTheme,
+                          text: widget.detail.contentData.karrot.text,
+                          tags: widget.detail.contentData.karrot.hashtagsLine,
+                          textTheme: widget.textTheme,
                         ),
                         _PlatformExtra(
                           label: '네이버',
-                          text: detail.contentData.naver.text,
-                          tags: detail.contentData.naver.hashtagsLine,
-                          textTheme: textTheme,
+                          text: widget.detail.contentData.naver.text,
+                          tags: widget.detail.contentData.naver.hashtagsLine,
+                          textTheme: widget.textTheme,
                         ),
                       ],
                     ),
@@ -307,14 +459,18 @@ class _ResultBody extends StatelessWidget {
         ),
         SizedBox(height: h(16)),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               flex: 3,
               child: SizedBox(
-                height: h(62),
+                height: h(_actionButtonHeight),
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: _isPreparingRegenerate ? null : _goToStep2ForRegenerate,
                   style: OutlinedButton.styleFrom(
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: EdgeInsets.symmetric(horizontal: h(8)),
                     side: const BorderSide(color: AppTheme.primaryColor, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -322,8 +478,8 @@ class _ResultBody extends StatelessWidget {
                     backgroundColor: AppTheme.surfaceColor,
                   ),
                   child: Text(
-                    '재생성',
-                    style: textTheme.titleMedium?.copyWith(
+                    _isPreparingRegenerate ? '불러오는 중...' : '재생성',
+                    style: widget.textTheme.titleMedium?.copyWith(
                       fontSize: f(18),
                       fontWeight: FontWeight.w700,
                       color: AppTheme.primaryColor,
@@ -337,7 +493,10 @@ class _ResultBody extends StatelessWidget {
               flex: 6,
               child: PrimaryButton(
                 text: '공유하기 →',
-                onPressed: onShare,
+                height: _actionButtonHeight,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                onPressed: widget.onShare,
               ),
             ),
           ],

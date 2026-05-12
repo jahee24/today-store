@@ -101,11 +101,6 @@ class Step4PreviewGenerate extends ConsumerWidget {
                         styleEmoji: styleMeta.emoji,
                         extraRequest: extraRequest,
                       ),
-                      SizedBox(height: h(14)),
-
-                      _CreditNoticeCard(
-                        remainingCreditText: '남은 크레딧: 4회 (Free 플랜)',
-                      ),
                     ],
                   ),
                 ),
@@ -181,116 +176,122 @@ class _PreviewSummaryCard extends StatelessWidget {
       child: Column(
         children: [
           ClipRRect(
-            borderRadius: const BorderRadiusGeometry.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             child: SizedBox(
               height: h(170),
-            child: Row(
+              width: double.infinity,
+              child: images.length <= 1
+                  ? _PreviewImageTile(
+                      imagePath: images.isNotEmpty ? images[0].path : null,
+                      fallbackColor: const Color(0xFFF4E3E3),
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _PreviewImageTile(
+                            imagePath: images[0].path,
+                            fallbackColor: const Color(0xFFF4E3E3),
+                          ),
+                        ),
+                        Expanded(
+                          child: _PreviewImageTile(
+                            imagePath: images[1].path,
+                            fallbackColor: const Color(0xFFE4F0EC),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+
+          Padding(
+            padding: EdgeInsets.fromLTRB(h(18), h(14), h(18), h(18)),
+            child: Column(
               children: [
-                Expanded(
-                  child: _PreviewImageTile(
-                    imagePath: images.isNotEmpty ? images[0].path : null,
-                    fallbackColor: const Color(0xFFF4E3E3),
+                _SummaryRow(
+                  label: '업로드 사진',
+                  valueWidget: Text(
+                    '${imageCount}장',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontSize: f(18),
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: _PreviewImageTile(
-                    imagePath: images.length > 1 ? images[1].path : null,
-                    fallbackColor: const Color(0xFFE4F0EC),
+                SizedBox(height: h(12)),
+                const Divider(height: 1, color: AppTheme.dividerColor),
+                SizedBox(height: h(12)),
+
+                _SummaryRow(
+                  label: '사진 설명',
+                  valueWidget: Text(
+                    isDescriptionComplete ? '입력 완료 ✓' : '입력 미완료',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: f(16),
+                      fontWeight: FontWeight.w700,
+                      color: isDescriptionComplete
+                          ? AppTheme.successText
+                          : AppTheme.dangerText,
+                    ),
+                  ),
+                ),
+                SizedBox(height: h(12)),
+                const Divider(height: 1, color: AppTheme.dividerColor),
+                SizedBox(height: h(12)),
+
+                _SummaryRow(
+                  label: '스타일',
+                  valueWidget: Text(
+                    '$styleEmoji $styleLabel',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: f(16),
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+                SizedBox(height: h(12)),
+                const Divider(height: 1, color: AppTheme.dividerColor),
+                SizedBox(height: h(12)),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '추가 요청사항',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: f(16),
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                SizedBox(height: h(10)),
+
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: h(14),
+                    vertical: h(14),
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.fillLighter,
+                    borderRadius: BorderRadius.circular(h(14)),
+                  ),
+                  child: Text(
+                    extraRequest.isEmpty ? '없음' : extraRequest,
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontSize: f(16),
+                      color: extraRequest.isEmpty
+                          ? AppTheme.textTertiary
+                          : AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-      ),
-
-      Padding(
-        padding: EdgeInsets.fromLTRB(h(18), h(14), h(18), h(18)),
-        child: Column(
-          children: [
-            _SummaryRow(
-              label: '업로드 사진',
-              valueWidget: Text(
-                '${imageCount}장',
-                style: textTheme.titleLarge?.copyWith(
-                  fontSize: f(18),
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ),
-            SizedBox(height: h(12)),
-            const Divider(height: 1, color: AppTheme.dividerColor),
-            SizedBox(height: h(12)),
-
-            _SummaryRow(
-              label: '사진 설명',
-              valueWidget: Text(
-                isDescriptionComplete ? '입력 완료 ✓' : '입력 미완료',
-                style: textTheme.titleMedium?.copyWith(
-                  fontSize: f(16),
-                  fontWeight: FontWeight.w700,
-                  color: isDescriptionComplete
-                  ? AppTheme.successText
-                  : AppTheme.dangerText,
-                ),
-              ),
-            ),
-            SizedBox(height: h(12)),
-            const Divider(height: 1, color: AppTheme.dividerColor),
-            SizedBox(height: h(12)),
-
-            _SummaryRow(
-              label: '스타일',
-              valueWidget: Text(
-                '$styleEmoji $styleLabel',
-                style: textTheme.titleMedium?.copyWith(
-                  fontSize: f(16),
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-            ),
-            SizedBox(height: h(12)),
-            const Divider(height: 1, color: AppTheme.dividerColor),
-            SizedBox(height: h(12)),
-
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '추가 요청사항',
-                style: textTheme.titleMedium?.copyWith(
-                  fontSize: f(16),
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ),
-            SizedBox(height: h(10)),
-
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                horizontal: h(14),
-                vertical: h(14),
-              ),
-              decoration: BoxDecoration(
-                color: AppTheme.fillLighter,
-                borderRadius: BorderRadius.circular(h(14)),
-              ),
-              child: Text(
-                extraRequest.isEmpty ? '없음' : extraRequest,
-                style: textTheme.bodyLarge?.copyWith(
-                  fontSize: f(16),
-                  color: extraRequest.isEmpty
-                  ? AppTheme.textTertiary
-                  : AppTheme.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
         ],
       ),
     );
@@ -357,71 +358,6 @@ class _SummaryRow extends StatelessWidget {
         const Spacer(),
         valueWidget,
       ],
-    );
-  }
-}
-
-class _CreditNoticeCard extends StatelessWidget {
-  final String remainingCreditText;
-
-  const _CreditNoticeCard({
-    required this.remainingCreditText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final h = (double v) => AppLayout.h(context, v);
-    final f = (double v) => AppLayout.f(context, v);
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: h(18),
-        vertical: h(16),
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEA),
-        borderRadius: BorderRadius.circular(h(18)),
-        border: Border.all(
-          color: const Color(0xFFE8D85E),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '✨',
-            style: TextStyle(fontSize: 28),
-          ),
-          SizedBox(width: h(12)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '크레딧 1회 차감',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontSize: f(18),
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.warningText,
-                  ),
-                ),
-                SizedBox(height: h(6)),
-                Text(
-                  remainingCreditText,
-                  style: textTheme.bodyLarge?.copyWith(
-                    fontSize: f(15),
-                    color: AppTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

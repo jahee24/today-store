@@ -193,17 +193,33 @@ class RequestContentsResponse {
 
 class GenerationRequestDetailResponse {
   final String id;
+  final String concept;
+  final String additionalNote;
+  final List<String> imageDescriptions;
   final List<GenerationRequestImage> images;
 
   const GenerationRequestDetailResponse({
     required this.id,
+    required this.concept,
+    required this.additionalNote,
+    required this.imageDescriptions,
     required this.images,
   });
 
   factory GenerationRequestDetailResponse.fromJson(Map<String, dynamic> json) {
-    final rawImages = (json['images'] as List<dynamic>? ?? const []);
+    final rawImages =
+        (json['images'] as List<dynamic>? ??
+            json['inputImages'] as List<dynamic>? ??
+            const []);
+    final rawDescriptions = (json['imageDescriptions'] as List<dynamic>? ??
+            json['descriptions'] as List<dynamic>? ??
+            const []);
     return GenerationRequestDetailResponse(
-      id: (json['id'] ?? '').toString(),
+      id: (json['id'] ?? json['requestId'] ?? json['request_id'] ?? '').toString(),
+      concept: (json['concept'] ?? '').toString(),
+      additionalNote:
+          (json['additionalNote'] ?? json['additional_note'] ?? '').toString(),
+      imageDescriptions: rawDescriptions.map((e) => e.toString()).toList(),
       images: rawImages
           .whereType<Map<String, dynamic>>()
           .map(GenerationRequestImage.fromJson)
@@ -223,7 +239,7 @@ class GenerationRequestImage {
 
   factory GenerationRequestImage.fromJson(Map<String, dynamic> json) {
     return GenerationRequestImage(
-      id: (json['id'] ?? '').toString(),
+      id: (json['id'] ?? json['inputImageId'] ?? json['imageId'] ?? '').toString(),
       url: (json['url'] ?? '').toString(),
     );
   }
@@ -242,8 +258,8 @@ class ImageVariationStartResponse {
 
   factory ImageVariationStartResponse.fromJson(Map<String, dynamic> json) {
     return ImageVariationStartResponse(
-      requestId: (json['requestId'] ?? '').toString(),
-      taskId: (json['taskId'] ?? '').toString(),
+      requestId: (json['requestId'] ?? json['request_id'] ?? '').toString(),
+      taskId: (json['taskId'] ?? json['task_id'] ?? json['apiLogId'] ?? '').toString(),
       startedAt: json['startedAt'] != null
           ? DateTime.tryParse(json['startedAt'].toString())
           : null,
@@ -266,7 +282,7 @@ class ImageVariationItem {
     return ImageVariationItem(
       id: (json['id'] ?? '').toString(),
       url: (json['url'] ?? '').toString(),
-      angleType: (json['angleType'] ?? '').toString(),
+      angleType: (json['angleType'] ?? json['angle_type'] ?? json['type'] ?? '').toString(),
     );
   }
 }

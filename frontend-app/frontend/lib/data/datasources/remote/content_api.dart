@@ -91,7 +91,15 @@ class ContentApi {
     required String inputImageId,
   }) async {
     final response = await dio.get('/api/v1/contents/images/$inputImageId/variations');
-    final list = response.data as List<dynamic>? ?? const [];
+    final data = response.data;
+    final list = data is List<dynamic>
+        ? data
+        : data is Map<String, dynamic>
+            ? (data['data'] as List<dynamic>? ??
+                data['items'] as List<dynamic>? ??
+                data['variations'] as List<dynamic>? ??
+                const [])
+            : const <dynamic>[];
     return list
         .whereType<Map<String, dynamic>>()
         .map(ImageVariationItem.fromJson)
@@ -116,5 +124,11 @@ class ContentApi {
     required String requestId,
   }) async {
     await dio.delete('/api/v1/contents/request/$requestId');
+  }
+
+  Future<void> deleteContent({
+    required String contentId,
+  }) async {
+    await dio.delete('/api/v1/contents/$contentId');
   }
 }

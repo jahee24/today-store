@@ -27,6 +27,7 @@ class ImageResultViewScreen extends ConsumerWidget {
     final f = (double v) => AppLayout.f(context, v);
     final imageState = ref.watch(imageContentCreationProvider);
     final variations = imageState.variations;
+    final contentId = GoRouterState.of(context).uri.queryParameters['contentId'] ?? '';
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -82,7 +83,11 @@ class ImageResultViewScreen extends ConsumerWidget {
 
                             try {
                               final repository = ref.read(contentRepositoryProvider);
-                              await repository.deleteGenerationRequest(requestId: requestId);
+                              if (contentId.trim().isNotEmpty) {
+                                await repository.deleteContent(contentId: contentId.trim());
+                              } else {
+                                await repository.deleteGenerationRequest(requestId: requestId);
+                              }
                               ref.read(imageContentCreationProvider.notifier).reset();
                               ref.invalidate(dashboardDataProvider);
                               if (context.mounted) {
@@ -187,6 +192,7 @@ class ImageResultViewScreen extends ConsumerWidget {
               ),
               SizedBox(height: h(10)),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     flex: 3,
@@ -195,6 +201,9 @@ class ImageResultViewScreen extends ConsumerWidget {
                       child: OutlinedButton(
                         onPressed: () => context.go('/processing?mode=image'),
                         style: OutlinedButton.styleFrom(
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: EdgeInsets.symmetric(horizontal: h(8)),
                           side: const BorderSide(
                             color: AppTheme.primaryColor,
                             width: 2,
@@ -220,6 +229,9 @@ class ImageResultViewScreen extends ConsumerWidget {
                     flex: 6,
                     child: PrimaryButton(
                       text: '앨범에 저장',
+                      height: 62,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                       onPressed: null,
                     ),
                   ),

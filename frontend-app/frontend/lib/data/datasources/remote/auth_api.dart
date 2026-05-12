@@ -54,13 +54,19 @@ class AuthApi {
   }
 
   Future<UserModel> updateMyProfile({
-    required String name,
+    String? name,
+    String? email,
   }) async {
+    final payload = <String, dynamic>{};
+    if (name != null && name.trim().isNotEmpty) {
+      payload['name'] = name.trim();
+    }
+    if (email != null && email.trim().isNotEmpty) {
+      payload['email'] = email.trim();
+    }
     final response = await dio.patch(
       '/api/v1/users/me',
-      data: {
-        'name': name,
-      },
+      data: payload,
     );
     return UserModel.fromJson(response.data as Map<String, dynamic>);
   }

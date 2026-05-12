@@ -71,8 +71,9 @@ class AuthRepository {
   }
 
   Future<UserModel> updateMyProfile({
-    required String name,
+    String? name,
+    String? email,
   }) {
-    return authApi.updateMyProfile(name: name);
+    return authApi.updateMyProfile(name: name, email: email);
   }
 }
