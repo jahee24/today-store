@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Select branch-specific deployment target (develop=dev, main=prod)
       - name: Resolve deployment context
@@ -77,13 +77,13 @@ jobs:
 
       # Set up JDK and Gradle cache
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       # Run backend tests before container build
       - name: Build and test with Gradle
@@ -124,7 +124,7 @@ jobs:
           IMAGE_URI: ${{ steps.image_meta.outputs.image_uri }}
         shell: bash
         run: |
-          docker build -t "$IMAGE_URI" backend-spring/today-store
+          docker build --pull -t "$IMAGE_URI" backend-spring/today-store
 
       # Scan Docker image for HIGH/CRITICAL vulnerabilities
       - name: Trivy security scan

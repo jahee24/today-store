@@ -9,7 +9,7 @@ COPY src src
 
 RUN chmod +x gradlew && ./gradlew --no-daemon clean bootJar
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-noble
 WORKDIR /app
 
 COPY --from=build /workspace/build/libs/*.jar app.jar
