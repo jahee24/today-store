@@ -26,18 +26,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Set up JDK for Spring Boot build
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
       # Enable Gradle cache and build optimizations
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       # Run backend tests and create executable jar
       - name: Build and test with Gradle
@@ -48,7 +48,7 @@ jobs:
 
       # Verify Docker image
       - name: Docker build test
-        run: docker build -t backend-ci-test:latest backend-spring/today-store
+        run: docker build --pull -t backend-ci-test:latest backend-spring/today-store
 
       # Scan Docker image for HIGH/CRITICAL vulnerabilities
       - name: Trivy security scan
