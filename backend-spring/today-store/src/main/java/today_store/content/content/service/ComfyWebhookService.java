@@ -1,6 +1,7 @@
 package today_store.content.content.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import today_store.common.exception.ErrorCode;
 import today_store.common.gcs.GcsService;
 import today_store.common.runcomfy.dto.RunComfyResultResponse;
 import today_store.common.runcomfy.service.RunComfyService;
+import today_store.content.content.event.TaskCompletedEvent;
 import today_store.content.content.exception.TaskNotFoundException;
 import today_store.content.request.exception.GenerationRequestNotFoundException;
 import today_store.content.content.entity.ApiLog;
@@ -37,6 +39,7 @@ public class ComfyWebhookService {
     private final RunComfyService runComfyService;
     private final WebClient webClient;
     private final ComfyWebhookService self;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ComfyWebhookService(
             ApiLogRepository apiLogRepository,
@@ -45,7 +48,8 @@ public class ComfyWebhookService {
             GcsService gcsService,
             RunComfyService runComfyService,
             WebClient webClient,
-            @Lazy ComfyWebhookService self) {
+            @Lazy ComfyWebhookService self,
+            ApplicationEventPublisher eventPublisher) {
         this.apiLogRepository = apiLogRepository;
         this.inputImageRepository = inputImageRepository;
         this.variationRepository = variationRepository;
@@ -53,6 +57,7 @@ public class ComfyWebhookService {
         this.runComfyService = runComfyService;
         this.webClient = webClient;
         this.self = self;
+        this.eventPublisher = eventPublisher;
     }
 
     private static final Map<String, String> NODE_ANGLE_MAP = Map.of(
@@ -178,6 +183,8 @@ public class ComfyWebhookService {
 
         apiLog.completeSuccess(null, 0, 0, BigDecimal.ZERO, 0);
         apiLogRepository.save(apiLog);
+
+        eventPublisher.publishEvent(new TaskCompletedEvent(this, apiLog));
     }
 
     @Transactional
@@ -188,6 +195,8 @@ public class ComfyWebhookService {
         if (apiLog.getStatus() == ApiStatus.PROCESSING) {
             apiLog.completeError(errorMessage);
             apiLogRepository.save(apiLog);
+
+            eventPublisher.publishEvent(new TaskCompletedEvent(this, apiLog));
         }
     }
 
@@ -197,6 +206,8 @@ public class ComfyWebhookService {
         apiLogRepository.findById(apiLogId).ifPresent(apiLog -> {
             apiLog.completeError(errorMessage);
             apiLogRepository.save(apiLog);
+
+            eventPublisher.publishEvent(new TaskCompletedEvent(this, apiLog));
         });
     }
 
