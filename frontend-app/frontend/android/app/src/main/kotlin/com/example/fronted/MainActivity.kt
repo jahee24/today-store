@@ -1,6 +1,7 @@
 package com.today_store.frontend
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
@@ -24,6 +25,14 @@ class MainActivity : FlutterActivity() {
                             return@setMethodCallHandler
                         }
                         result.success(shareImageToInstagram(filePath))
+                    }
+                    "isAppInstalled" -> {
+                        val app = call.argument<String>("app")?.trim().orEmpty()
+                        if (app.isEmpty()) {
+                            result.error("INVALID_APP", "app is required", null)
+                            return@setMethodCallHandler
+                        }
+                        result.success(isAppInstalled(app))
                     }
                     else -> result.notImplemented()
                 }
@@ -58,6 +67,27 @@ class MainActivity : FlutterActivity() {
             true
         } catch (_: Exception) {
             false
+        }
+    }
+
+    private fun isPackageInstalled(packageName: String): Boolean {
+        return try {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    private fun isAppInstalled(app: String): Boolean {
+        return when (app) {
+            "instagram" -> isPackageInstalled("com.instagram.android")
+            "daangn" ->
+                isPackageInstalled("com.towneers.www") ||
+                    isPackageInstalled("com.towneers.hello")
+            "naver" -> isPackageInstalled("com.nhn.android.search")
+            else -> false
         }
     }
 }

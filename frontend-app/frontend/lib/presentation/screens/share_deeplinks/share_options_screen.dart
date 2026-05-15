@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'dart:async';
 import 'dart:io';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
+import '../../../data/models/content_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
+import '../../../services/external_app_launcher.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 
 /// 공유 채널 선택 (딥링크·복사 등).
@@ -29,6 +31,7 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
   /// 데스크톱·웹 호버 시 해당 카드만 대표색 테두리.
   int? _hoveredIndex;
   bool _isInstagramSharing = false;
+  bool _isCopyingText = false;
 
   bool _primaryBorder(int index) {
     if (_hoveredIndex != null) {
@@ -98,9 +101,19 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
         return;
       }
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Today Store에서 만든 콘텐츠예요',
+      if (!mounted) return;
+      final instagramInstalled =
+          await ExternalAppLauncher.isAppInstalled(StoreListingApp.instagram);
+      if (!mounted) return;
+      if (!instagramInstalled) {
+        await context.push('/install-prompt?target=instagram');
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Instagram을 열 수 없어요. 잠시 후 다시 시도해 주세요.'),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -110,6 +123,113 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
     } finally {
       if (mounted) {
         setState(() => _isInstagramSharing = false);
+      }
+    }
+  }
+
+  Future<void> _openDaangn() async {
+    setState(() => _selectedIndex = 1);
+    final installed = await ExternalAppLauncher.canOpenApp(StoreListingApp.daangn);
+    if (!mounted) return;
+    if (!installed) {
+      await context.push('/install-prompt?target=daangn');
+      return;
+    }
+    final opened = await ExternalAppLauncher.openApp(StoreListingApp.daangn);
+    if (!mounted) return;
+    if (!opened) {
+      await context.push('/install-prompt?target=daangn');
+    }
+  }
+
+  Future<void> _openNaver() async {
+    setState(() => _selectedIndex = 2);
+    final installed = await ExternalAppLauncher.canOpenApp(StoreListingApp.naver);
+    if (!mounted) return;
+    if (!installed) {
+      await context.push('/install-prompt?target=naver');
+      return;
+    }
+    final opened = await ExternalAppLauncher.openApp(StoreListingApp.naver);
+    if (!mounted) return;
+    if (!opened) {
+      await context.push('/install-prompt?target=naver');
+    }
+  }
+
+  String _composeShareCopyText(ContentDetail detail) {
+    final buf = StringBuffer();
+    final ig = detail.contentData.instagram;
+    final main = ig.text.trim();
+    if (main.isNotEmpty) {
+      buf.writeln(main);
+    }
+    final ht = ig.hashtagsLine.trim();
+    if (ht.isNotEmpty) {
+      if (buf.isNotEmpty) {
+        buf.writeln();
+      }
+      buf.writeln(ht);
+    }
+    _appendPlatformCopy(buf, '당근', detail.contentData.karrot);
+    _appendPlatformCopy(buf, '네이버', detail.contentData.naver);
+    return buf.toString().trim();
+  }
+
+  void _appendPlatformCopy(StringBuffer buf, String label, ContentPlatformCopy p) {
+    final t = p.text.trim();
+    final tags = p.hashtagsLine.trim();
+    if (t.isEmpty && tags.isEmpty) {
+      return;
+    }
+    buf.writeln();
+    buf.writeln('[$label]');
+    if (t.isNotEmpty) {
+      buf.writeln(t);
+    }
+    if (tags.isNotEmpty) {
+      buf.writeln(tags);
+    }
+  }
+
+  Future<void> _copyGeneratedText() async {
+    if (_isCopyingText) {
+      return;
+    }
+    final contentId = GoRouterState.of(context).uri.queryParameters['contentId']?.trim() ?? '';
+    if (contentId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('복사할 콘텐츠 정보를 찾을 수 없어요.')),
+      );
+      return;
+    }
+
+    setState(() => _isCopyingText = true);
+    try {
+      final repository = ref.read(contentRepositoryProvider);
+      final detail = await repository.getContent(contentId: contentId);
+      final text = _composeShareCopyText(detail);
+      if (text.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('복사할 문구가 없어요.')),
+        );
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: text));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('클립보드에 복사했어요.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('문구를 불러오지 못했어요.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isCopyingText = false);
       }
     }
   }
@@ -229,7 +349,9 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
                           size: 16,
                           color: AppTheme.textTertiary,
                         ),
-                        onTap: () => setState(() => _selectedIndex = 1),
+                        onTap: () async {
+                          await _openDaangn();
+                        },
                       ),
                     ),
                     SizedBox(height: h(12)),
@@ -267,7 +389,9 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
                           size: 16,
                           color: AppTheme.textTertiary,
                         ),
-                        onTap: () => setState(() => _selectedIndex = 2),
+                        onTap: () async {
+                          await _openNaver();
+                        },
                       ),
                     ),
                     SizedBox(height: h(12)),
@@ -301,9 +425,7 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
                         ),
                         onTap: () {
                           setState(() => _selectedIndex = 3);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('생성 문구는 결과 화면에서 복사할 수 있어요.')),
-                          );
+                          unawaited(_copyGeneratedText());
                         },
                       ),
                     ),

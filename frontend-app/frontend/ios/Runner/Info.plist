@@ -29,6 +29,9 @@
 		<key>LSApplicationQueriesSchemes</key>
 		<array>
 			<string>instagram</string>
+			<string>daangn</string>
+			<string>karrot</string>
+			<string>naversearchapp</string>
 		</array>
 		<key>UIApplicationSceneManifest</key>
 		<dict>

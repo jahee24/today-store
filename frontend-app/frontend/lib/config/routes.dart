@@ -5,6 +5,7 @@ import 'package:fronted/presentation/screens/image_content_creation/image_step1_
 import 'package:fronted/presentation/screens/processing/processing_loading.dart';
 import 'package:fronted/presentation/screens/result_view/image_result_view.dart';
 import 'package:fronted/presentation/screens/result_view/result_view.dart';
+import 'package:fronted/presentation/screens/share_deeplinks/app_install_prompt_screen.dart';
 import 'package:fronted/presentation/screens/share_deeplinks/share_options_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -113,6 +114,11 @@ final router = GoRouter(
     GoRoute(
       path: '/share',
       builder: (context, state) => const ShareOptionsScreen(),
+    ),
+
+    GoRoute(
+      path: '/install-prompt',
+      builder: (context, state) => const AppInstallPromptScreen(),
     ),
 
     GoRoute(

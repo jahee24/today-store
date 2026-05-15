@@ -42,6 +42,20 @@ class SceneDelegate: FlutterSceneDelegate, UIDocumentInteractionControllerDelega
           return
         }
         result(self.shareImageToInstagram(filePath: filePath))
+      case "isAppInstalled":
+        guard let args = call.arguments as? [String: Any],
+              let app = args["app"] as? String
+        else {
+          result(
+            FlutterError(
+              code: "INVALID_APP",
+              message: "app is required",
+              details: nil
+            )
+          )
+          return
+        }
+        result(self.isAppInstalled(app: app))
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -80,6 +94,23 @@ class SceneDelegate: FlutterSceneDelegate, UIDocumentInteractionControllerDelega
     }
 
     return controller.presentOpenInMenu(from: rootView.bounds, in: rootView, animated: true)
+  }
+
+  private func isAppInstalled(app: String) -> Bool {
+    switch app {
+    case "instagram":
+      guard let url = URL(string: "instagram://app") else { return false }
+      return UIApplication.shared.canOpenURL(url)
+    case "daangn":
+      if let u = URL(string: "daangn://"), UIApplication.shared.canOpenURL(u) { return true }
+      if let u = URL(string: "karrot://"), UIApplication.shared.canOpenURL(u) { return true }
+      return false
+    case "naver":
+      guard let url = URL(string: "naversearchapp://") else { return false }
+      return UIApplication.shared.canOpenURL(url)
+    default:
+      return false
+    }
   }
 
   func documentInteractionControllerViewControllerForPreview(
