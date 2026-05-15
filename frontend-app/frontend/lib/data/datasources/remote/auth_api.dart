@@ -49,11 +49,20 @@ class AuthApi {
   }
 
   Future<UserModel> getMyProfile() async {
-    final response = await dio.get('/api/v1/users/me');
-    return UserModel.fromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await dio.get('/api/v1/users/me');
+      print('GET PROFILE RESPONSE: ${response.data}');
+      return UserModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      print('GET PROFILE ERROR: $e');
+      rethrow;
+    }
   }
 
-  Future<UserModel> updateMyProfile({
+  /// PATCH /api/v1/users/me 응답에는 이메일 변경 시
+  /// 새 accessToken / refreshToken이 함께 내려옴.
+  Future<({UserModel user, String? accessToken, String? refreshToken})>
+      updateMyProfile({
     String? name,
     String? email,
   }) async {
@@ -64,10 +73,23 @@ class AuthApi {
     if (email != null && email.trim().isNotEmpty) {
       payload['email'] = email.trim();
     }
-    final response = await dio.patch(
-      '/api/v1/users/me',
-      data: payload,
-    );
-    return UserModel.fromJson(response.data as Map<String, dynamic>);
+
+    print('UPDATE PROFILE REQUEST: $payload');
+    try {
+      final response = await dio.patch(
+        '/api/v1/users/me',
+        data: payload,
+      );
+      print('UPDATE PROFILE RESPONSE: ${response.data}');
+      final data = response.data as Map<String, dynamic>;
+      return (
+        user: UserModel.fromJson(data),
+        accessToken: data['accessToken'] as String?,
+        refreshToken: data['refreshToken'] as String?,
+      );
+    } catch (e) {
+      print('UPDATE PROFILE ERROR: $e');
+      rethrow;
+    }
   }
 }

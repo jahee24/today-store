@@ -15,8 +15,6 @@ class LoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    final size = MediaQuery.of(context).size;
-    final scale = AppLayout.scale(context);
     final horizontalPadding = AppLayout.h(context, 32);
     final buttonHeight = AppLayout.h(context, 75);
     final authState = ref.watch(authProvider);
@@ -47,7 +45,7 @@ class LoginScreen extends ConsumerWidget {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Column(
                 children: [
-                  SizedBox(height: size.height * 0.23),
+                  const Spacer(flex: 3),
 
                   SizedBox(
                     width: AppLayout.h(context, 90),
@@ -80,7 +78,7 @@ class LoginScreen extends ConsumerWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const Spacer(),
+                  const Spacer(flex: 4),
 
                   SizedBox(
                     width: double.infinity,
@@ -179,7 +177,7 @@ class LoginScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  SizedBox(height: size.height * (0.18 * scale.clamp(0.9, 1.0))),
+                  const Spacer(flex: 3),
                 ],
               ),
             ),

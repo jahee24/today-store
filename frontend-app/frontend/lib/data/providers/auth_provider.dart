@@ -11,6 +11,7 @@ import '../datasources/remote/auth_api.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
 import '../../services/token_service.dart';
+import 'network_provider.dart';
 
 enum AuthStatus {
   initial,
@@ -43,31 +44,31 @@ class AuthState {
   }
 }
 
-final tokenServiceProvider = Provider<TokenService>((ref) {
-  return TokenService();
-});
-
-final apiClientProvider = Provider<ApiClient>((ref) {
-  final tokenService = ref.read(tokenServiceProvider);
-  return ApiClient(tokenService: tokenService);
-});
-
 final authApiProvider = Provider<AuthApi>((ref) {
-  final apiClient = ref.read(apiClientProvider);
+  final apiClient = ref.watch(apiClientProvider);
   return AuthApi(apiClient.dio);
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
-    authApi: ref.read(authApiProvider), 
-    tokenService: ref.read(tokenServiceProvider),
+    authApi: ref.watch(authApiProvider), 
+    tokenService: ref.watch(tokenServiceProvider),
   );
 });
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(
-    authRepository: ref.read(authRepositoryProvider),
+  final notifier = AuthNotifier(
+    authRepository: ref.watch(authRepositoryProvider),
   );
+
+  // 전역 인증 실패 이벤트 감시
+  ref.listen(authFailureEventProvider, (previous, next) {
+    if (next is AsyncData) {
+      notifier.forceLogout('로그인 세션이 만료되었습니다.\n보안을 위해 다시 로그인해 주세요.');
+    }
+  });
+
+  return notifier;
 });
 
 final currentUserProvider = FutureProvider<UserModel>((ref) async {
@@ -101,6 +102,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     return '로그인 처리 중 오류가 발생했어요.';
+  }
+
+  Future<bool> tryAutoLogin() async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      final success = await authRepository.tryAutoLogin();
+      if (success) {
+        state = state.copyWith(status: AuthStatus.authenticated);
+        return true;
+      } else {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+        return false;
+      }
+    } catch (_) {
+      state = state.copyWith(status: AuthStatus.unauthenticated);
+      return false;
+    }
   }
 
   Future<void> loginWithGoogle() async {
@@ -195,5 +213,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await authRepository.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  void forceLogout(String message) {
+    state = AuthState(
+      status: AuthStatus.unauthenticated,
+      errorMessage: message,
+    );
   }
 }

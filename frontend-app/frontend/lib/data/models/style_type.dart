@@ -1,50 +1,49 @@
 enum StyleType {
+  plain,
   clean,
-  emotional,
-  formal,
   friendly,
+  meme,
 }
 
 extension StyleTypeX on StyleType {
   String get apiValue {
     switch (this) {
+      case StyleType.plain:
+        return 'PLAIN';
       case StyleType.clean:
-      return 'clean';
-      case StyleType.emotional:
-      return 'emotional';
-      case StyleType.formal:
-      return 'formal';
+        return 'CLEAN';
       case StyleType.friendly:
-      return 'friendly';
+        return 'FRIENDLY';
+      case StyleType.meme:
+        return 'MEME';
     }
   }
 
   String get label {
     switch (this) {
+      case StyleType.plain:
+        return '무난';
       case StyleType.clean:
-      return '깔끔';
-      case StyleType.emotional:
-      return '감성적';
-      case StyleType.formal:
-      return '전문성';
+        return '깔끔';
       case StyleType.friendly:
-      return '친근';
+        return '친근';
+      case StyleType.meme:
+        return 'meme';
     }
   }
 
   static StyleType? fromLabel(String? label) {
     switch (label) {
-      case '깔끔':
-      return StyleType.clean;
       case '무난':
-      case '감성적':
-      return StyleType.emotional;
-      case '전문성':
-      return StyleType.formal;
+        return StyleType.plain;
+      case '깔끔':
+        return StyleType.clean;
       case '친근':
-      return StyleType.friendly;
+        return StyleType.friendly;
+      case 'meme':
+        return StyleType.meme;
       default:
-      return null;
+        return null;
     }
   }
 }

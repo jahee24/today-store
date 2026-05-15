@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
-        android:label="fronted"
+        android:label="오늘의 가게"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

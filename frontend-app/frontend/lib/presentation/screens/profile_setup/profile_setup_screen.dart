@@ -9,6 +9,7 @@ import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../../data/providers/store_provider.dart';
 import '../../models/address_pick_result.dart';
+import '../../../data/models/style_type.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -121,18 +122,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     setState(() {});
   }
 
-  String? _mapPreferredStyleToLabel(String? preferredStyle) {
-    switch (preferredStyle) {
-      case 'clean':
-        return '깔끔';
-      case 'friendly':
-        return '친근';
-      case 'emotional':
-        return '무난';
-      default:
-        return null;
-    }
-  }
+
 
   Future<void> _handleAddressSearch() async {
     _addressFocusNode.unfocus();
@@ -192,7 +182,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       final changedLongitude = _longitude != null && _longitude != original.longitude
           ? _longitude
           : null;
-      final currentPreferredStyleApi = _toPreferredStyleApiValue(selectedStyle);
+      final currentPreferredStyleApi = StyleTypeX.fromLabel(selectedStyle)?.apiValue;
       final changedPreferredStyle =
           currentPreferredStyleApi != original.preferredStyle
               ? selectedStyle
@@ -234,16 +224,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     );
   }
 
-  String? _toPreferredStyleApiValue(String? styleLabel) {
-    switch (styleLabel) {
-      case '깔끔':
-        return 'clean';
-      case '친근':
-        return 'friendly';
-      case '무난':
-        return 'emotional';
-      default:
-        return null;
+  String? _mapPreferredStyleToLabel(String? preferredStyle) {
+    if (preferredStyle == null) return null;
+    try {
+      final type = StyleType.values.firstWhere((e) => e.apiValue == preferredStyle);
+      return type.label;
+    } catch (_) {
+      return null;
     }
   }
 

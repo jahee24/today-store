@@ -215,8 +215,8 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
         uiState = _buildImageStateByProgress(50);
       });
 
-      const maxAttempts = 30;
-      for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      // 성공 또는 실패 응답이 올 때까지 무한 폴링 (서버 처리 완료까지 대기)
+      while (mounted) {
         final variations = await repository.getImageVariations(
           inputImageId: inputImageId,
         );
@@ -234,14 +234,14 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
         }
 
         if (!mounted) return;
-        final progress = (50 + (attempt + 1) * 2).clamp(50, 95);
+        // 진행률: 50%~95% 구간을 서서히 올림 (실제 완료 시점은 알 수 없으므로 95%에서 유지)
+        final elapsed = DateTime.now().millisecondsSinceEpoch;
+        final progress = (50 + (elapsed % 45)).clamp(50, 95);
         setState(() {
           uiState = _buildImageStateByProgress(progress);
         });
-        await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(const Duration(seconds: 3));
       }
-
-      _handleGenerationFailure('이미지 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.');
     } catch (e) {
       _timer?.cancel();
       _cancelProgressClimbTimer();
@@ -543,7 +543,7 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
       return ProcessingUiState(
         progress: progress,
         title: 'AI가 이미지를 만들고 있어요',
-        subtitle: '분석 완료\n이미지 합성 중...',
+        subtitle: '분석 완료\n이미지 합성 중이에요 (최대 10분 소요)',
         steps: const [
           ProcessingStepItem(
             label: '사진 업로드',
@@ -593,44 +593,63 @@ class _ProcessingLoadingScreenState extends ConsumerState<ProcessingLoadingScree
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final h = (double v) => AppLayout.h(context, v);
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(h(20), h(20), h(20), h(26)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(flex: 2),
-              Align(
-                alignment: Alignment.center,
-                child: _ProgressCircle(progress: uiState.progress),
-              ),
-              SizedBox(height: h(30)),
-              Text(
-                uiState.title,
-                textAlign: TextAlign.center,
-                style: textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+    return PopScope(
+      // 뒤로가기 허용 - 대시보드로 이동 (서버에서는 계속 이미지 생성 중)
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go('/dashboard');
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(h(20), h(20), h(20), h(26)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(flex: 2),
+                Align(
+                  alignment: Alignment.center,
+                  child: _ProgressCircle(progress: uiState.progress),
                 ),
-              ),
-              SizedBox(height: h(14)),
-              Text(
-                uiState.subtitle,
-                textAlign: TextAlign.center,
-                style: textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.textTertiary,
-                  fontWeight: FontWeight.w500,
-                  height: 1.5,
+                SizedBox(height: h(30)),
+                Text(
+                  uiState.title,
+                  textAlign: TextAlign.center,
+                  style: textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
-              ),
-              SizedBox(height: h(32)),
-              _ProcessingStepCard(
-                steps: uiState.steps,
-              ),
-              const Spacer(flex: 3),
-            ],
+                SizedBox(height: h(14)),
+                Text(
+                  uiState.subtitle,
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.textTertiary,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: h(32)),
+                _ProcessingStepCard(
+                  steps: uiState.steps,
+                ),
+                const Spacer(flex: 2),
+                // 이미지 모드일 때만 대시보드로 이동 버튼 표시
+                if (widget.mode == ProcessingMode.image)
+                  TextButton(
+                    onPressed: () => context.go('/dashboard'),
+                    child: Text(
+                      '대시보드로 돌아가기',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textTertiary,
+                      ),
+                    ),
+                  ),
+                const Spacer(),
+              ],
+            ),
           ),
         ),
       ),

@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
@@ -23,27 +25,6 @@ class ResultViewScreen extends ConsumerWidget {
       context.pop();
     } else {
       context.go('/dashboard');
-    }
-  }
-
-  String _headlineFromBody(String body) {
-    final first = body.split('\n').map((e) => e.trim()).firstWhere(
-          (e) => e.isNotEmpty,
-          orElse: () => '',
-        );
-    if (first.isEmpty) return '생성된 문구';
-    if (first.length <= 80) return first;
-    return '${first.substring(0, 80)}…';
-  }
-
-  String _generationLabel(String type) {
-    switch (type.toUpperCase()) {
-      case 'ALL':
-        return '전체 채널';
-      case 'INSTAGRAM_ONLY':
-        return '인스타그램';
-      default:
-        return type.isEmpty ? '생성 결과' : type;
     }
   }
 
@@ -70,7 +51,7 @@ class ResultViewScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'contentId가 없습니다. 생성이 완료된 뒤 다시 열어주세요.',
+                  'ID 정보가 누락되었습니다.',
                   style: textTheme.bodyLarge?.copyWith(color: AppTheme.textTertiary),
                 ),
               ],
@@ -82,59 +63,31 @@ class ResultViewScreen extends ConsumerWidget {
 
     final async = ref.watch(contentDetailProvider(contentId));
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(h(20), h(16), h(20), h(20)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: async.when(
-                  loading: () => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      BackArrowButton(onTap: () => _handleBack(context)),
-                      const Expanded(
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    ],
-                  ),
-                  error: (e, _) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      BackArrowButton(onTap: () => _handleBack(context)),
-                      SizedBox(height: h(20)),
-                      Text(
-                        '결과를 불러오지 못했어요',
-                        style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        e.toString(),
-                        style: textTheme.bodyMedium?.copyWith(color: AppTheme.textTertiary),
-                      ),
-                    ],
-                  ),
-                  data: (detail) => _ResultBody(
-                    contentId: contentId.trim(),
-                    detail: detail,
-                    textTheme: textTheme,
-                    onBack: () => _handleBack(context),
-                    headlineFromBody: _headlineFromBody,
-                    generationLabel: _generationLabel,
-                    onShare: () {
-                      final id = contentId.trim();
-                      final path = id.isEmpty
-                          ? '/share'
-                          : '/share?contentId=${Uri.encodeComponent(id)}';
-                      context.push(path);
-                    },
-                  ),
-                ),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: SafeArea(
+          child: async.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Padding(
+              padding: EdgeInsets.all(h(20)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BackArrowButton(onTap: () => _handleBack(context)),
+                  SizedBox(height: h(20)),
+                  Text('결과를 불러오지 못했어요', style: textTheme.titleLarge),
+                  Text(e.toString()),
+                ],
               ),
-            ],
+            ),
+            data: (detail) => _ResultBody(
+              contentId: contentId.trim(),
+              detail: detail,
+              textTheme: textTheme,
+              onBack: () => _handleBack(context),
+            ),
           ),
         ),
       ),
@@ -148,48 +101,197 @@ class _ResultBody extends ConsumerStatefulWidget {
     required this.detail,
     required this.textTheme,
     required this.onBack,
-    required this.headlineFromBody,
-    required this.generationLabel,
-    required this.onShare,
   });
 
   final String contentId;
   final ContentDetail detail;
   final TextTheme textTheme;
   final VoidCallback onBack;
-  final String Function(String) headlineFromBody;
-  final String Function(String) generationLabel;
-  final VoidCallback onShare;
 
   @override
   ConsumerState<_ResultBody> createState() => _ResultBodyState();
 }
 
 class _ResultBodyState extends ConsumerState<_ResultBody> {
-  static const double _actionButtonHeight = 62;
+  late TextEditingController _instaController;
+  late TextEditingController _karrotController;
+  late TextEditingController _naverController;
+
+  // 원본 텍스트 저장 (변경 여부 확인용)
+  String _origInsta = '';
+  String _origKarrot = '';
+  String _origNaver = '';
+
   bool _isPreparingRegenerate = false;
+  bool _isSaving = false;
 
-  Future<void> _goToStep2ForRegenerate() async {
-    if (_isPreparingRegenerate) {
-      return;
+  @override
+  void initState() {
+    super.initState();
+    _initControllers();
+  }
+
+  void _initControllers() {
+    final data = widget.detail.contentData;
+    _origInsta = '${data.instagram.text}\n\n${data.instagram.hashtagsLine}'.trim();
+    _origKarrot = '${data.karrot.text}\n\n${data.karrot.hashtagsLine}'.trim();
+    _origNaver = '${data.naver.text}\n\n${data.naver.hashtagsLine}'.trim();
+
+    _instaController = TextEditingController(text: _origInsta);
+    _karrotController = TextEditingController(text: _origKarrot);
+    _naverController = TextEditingController(text: _origNaver);
+
+    // 변경 감지를 위해 리스너 추가
+    _instaController.addListener(() => setState(() {}));
+    _karrotController.addListener(() => setState(() {}));
+    _naverController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _instaController.dispose();
+    _karrotController.dispose();
+    _naverController.dispose();
+    super.dispose();
+  }
+
+  bool _isChanged(String channel) {
+    if (channel == '인스타그램') return _instaController.text.trim() != _origInsta;
+    if (channel == '당근마켓') return _karrotController.text.trim() != _origKarrot;
+    if (channel == '네이버 블로그') return _naverController.text.trim() != _origNaver;
+    return false;
+  }
+
+  Future<void> _saveChannel(String label) async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    try {
+      final repository = ref.read(contentRepositoryProvider);
+      final contentId = widget.contentId;
+
+      String? insta, karrot, naver;
+      if (label == '인스타그램') insta = _instaController.text.trim();
+      if (label == '당근마켓') karrot = _karrotController.text.trim();
+      if (label == '네이버 블로그') naver = _naverController.text.trim();
+
+      await repository.updateContent(
+        contentId: contentId,
+        instagramText: insta,
+        karrotText: karrot,
+        naverText: naver,
+      );
+
+      // 성공 시 원본 데이터 갱신
+      setState(() {
+        if (insta != null) _origInsta = insta;
+        if (karrot != null) _origKarrot = karrot;
+        if (naver != null) _origNaver = naver;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$label 문구가 저장되었습니다.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
+  }
 
+  // 채널별 로딩 상태 관리
+  final Map<String, bool> _channelLoading = {
+    '인스타그램': false,
+    '당근마켓': false,
+    '네이버 블로그': false,
+  };
+
+  Future<void> _partialRegenerate(String label) async {
+    if (_channelLoading[label] == true) return;
+    
+    setState(() => _channelLoading[label] = true);
+
+    try {
+      final repository = ref.read(contentRepositoryProvider);
+      final requestId = widget.detail.requestId.trim();
+
+      // 1. 재생성 요청 시작
+      final genResponse = await repository.generateContent(requestId: requestId);
+      final taskId = genResponse.taskId;
+
+      // 2. 폴링 시작 (최대 1분)
+      ContentDetail? newDetail;
+      for (int i = 0; i < 30; i++) {
+        await Future.delayed(const Duration(seconds: 2));
+        final status = await repository.getTaskStatus(apiLogId: taskId);
+        
+        if (status.isSuccess) {
+          // 3. 성공 시 새로운 데이터 가져오기
+          if (status.result != null) {
+             newDetail = await repository.getContent(contentId: status.result!);
+          }
+          break;
+        } else if (status.isError) {
+          throw Exception('콘텐츠 생성에 실패했습니다.');
+        }
+      }
+
+      if (newDetail != null) {
+        // 4. 특정 채널만 업데이트 (나머지는 유지)
+        final newData = newDetail.contentData;
+        setState(() {
+          if (label == '인스타그램') {
+            _instaController.text = '${newData.instagram.text}\n\n${newData.instagram.hashtagsLine}'.trim();
+            _origInsta = _instaController.text;
+          } else if (label == '당근마켓') {
+            _karrotController.text = '${newData.karrot.text}\n\n${newData.karrot.hashtagsLine}'.trim();
+            _origKarrot = _karrotController.text;
+          } else if (label == '네이버 블로그') {
+            _naverController.text = '${newData.naver.text}\n\n${newData.naver.hashtagsLine}'.trim();
+            _origNaver = _naverController.text;
+          }
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$label 문구가 새로 생성되었습니다!')),
+          );
+        }
+      } else {
+        throw Exception('생성된 데이터를 불러올 수 없습니다.');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('재생성 중 오류 발생: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _channelLoading[label] = false);
+    }
+  }
+
+  // 기존 전체 재생성 로직 (필요시 대비해 유지)
+  Future<void> _goToFullRegenerate() async {
+    if (_isPreparingRegenerate) return;
     setState(() => _isPreparingRegenerate = true);
+
     try {
       final requestId = widget.detail.requestId.trim();
       if (requestId.isEmpty) {
-        if (mounted) {
-          context.push('/step2');
-        }
+        context.push('/step2');
         return;
       }
 
       final repository = ref.read(contentRepositoryProvider);
       final requestDetail = await repository.getRequestDetail(requestId: requestId);
-      final imageUrls = requestDetail.images
-          .map((e) => e.url.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
+      final imageUrls = requestDetail.images.map((e) => e.url.trim()).where((e) => e.isNotEmpty).toList();
 
       final notifier = ref.read(contentCreationProvider.notifier);
       final downloadedFiles = <XFile>[];
@@ -198,363 +300,402 @@ class _ResultBodyState extends ConsumerState<_ResultBody> {
         final bytes = await repository.contentApi.dio
             .get<List<int>>(url, options: Options(responseType: ResponseType.bytes))
             .then((res) => res.data);
-        if (bytes == null || bytes.isEmpty) {
-          continue;
-        }
+        if (bytes == null) continue;
         final tempDir = await getTemporaryDirectory();
-        final file = File(
-          '${tempDir.path}${Platform.pathSeparator}regen_source_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
-        );
-        await file.writeAsBytes(bytes, flush: true);
+        final file = File('${tempDir.path}/regen_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
+        await file.writeAsBytes(bytes);
         downloadedFiles.add(XFile(file.path));
       }
 
       notifier.setImages(downloadedFiles);
       for (var i = 0; i < downloadedFiles.length; i++) {
-        final fromServer = i < requestDetail.imageDescriptions.length
-            ? requestDetail.imageDescriptions[i].trim()
-            : '';
-        notifier.setDescription(i, fromServer.isNotEmpty ? fromServer : '사진 ${i + 1}');
+        final desc = i < requestDetail.imageDescriptions.length ? requestDetail.imageDescriptions[i] : '';
+        notifier.setDescription(i, desc.isNotEmpty ? desc : '사진 ${i + 1}');
       }
       notifier.setExtraRequest(requestDetail.additionalNote);
-
-      final concept = requestDetail.concept.trim();
-      const allowedStyles = {'감성적', '정보제공', '전문성', '친근'};
-      if (allowedStyles.contains(concept)) {
-        notifier.setSelectedStyle(concept);
+      if (['감성적', '정보제공', '전문성', '친근'].contains(requestDetail.concept)) {
+        notifier.setSelectedStyle(requestDetail.concept);
       }
 
-      if (!mounted) {
-        return;
-      }
-      if (downloadedFiles.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이전 이미지가 없어 새로 선택해 주세요.')),
-        );
-      }
-      context.push('/step2');
+      if (mounted) context.push('/step2');
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이전 입력값을 불러오지 못했어요. step2에서 다시 입력해 주세요.')),
-      );
-      context.push('/step2');
+      if (mounted) context.push('/step2');
     } finally {
-      if (mounted) {
-        setState(() => _isPreparingRegenerate = false);
-      }
+      if (mounted) setState(() => _isPreparingRegenerate = false);
     }
   }
 
   Future<void> _deleteCurrentContent() async {
     final contentId = widget.contentId.trim();
-    if (contentId.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('삭제할 콘텐츠 정보를 찾을 수 없어요.')),
-      );
-      return;
-    }
+    if (contentId.isEmpty) return;
 
     final shouldDelete = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
             title: const Text('콘텐츠 삭제'),
-            content: const Text('이 콘텐츠를 삭제할까요?'),
+            content: const Text('이 콘텐츠를 정말 삭제할까요?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => Navigator.pop(context, false),
                 child: const Text('취소'),
               ),
               TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text(
-                  '삭제',
-                  style: TextStyle(color: AppTheme.dangerText),
-                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('삭제', style: TextStyle(color: AppTheme.dangerText)),
               ),
             ],
           ),
         ) ??
         false;
-    if (!shouldDelete) return;
 
-    try {
-      final repository = ref.read(contentRepositoryProvider);
-      await repository.deleteContent(contentId: contentId);
-      ref.invalidate(dashboardDataProvider);
-      ref.invalidate(contentDetailProvider(contentId));
-      if (!mounted) return;
-      context.go('/history');
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('삭제 중 오류가 발생했어요.')),
-      );
+    if (shouldDelete) {
+      try {
+        final repository = ref.read(contentRepositoryProvider);
+        await repository.deleteContent(contentId: contentId);
+        ref.invalidate(dashboardDataProvider);
+        if (mounted) {
+          context.go('/history');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('삭제 중 오류가 발생했습니다: $e')),
+          );
+        }
+      }
     }
+  }
+
+  void _copyToClipboard(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('복사되었습니다!')),
+    );
+  }
+
+  void _shareContent(String text) {
+    final box = context.findRenderObject() as RenderBox?;
+    Share.share(
+      text,
+      sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final h = (double v) => AppLayout.h(context, v);
     final f = (double v) => AppLayout.f(context, v);
-    final ig = widget.detail.contentData.instagram;
-    final titleText = widget.headlineFromBody(ig.text);
-    final bodyText = ig.text.trim().isEmpty ? '본문이 없어요.' : ig.text;
-    final hashtags = ig.hashtagsLine;
-    final heroUrl =
-        widget.detail.images.isNotEmpty ? widget.detail.images.first.url : '';
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            BackArrowButton(onTap: widget.onBack),
-            SizedBox(width: h(12)),
-            Expanded(
-              child: Text(
-                '생성 결과',
-                style: widget.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+        Padding(
+          padding: EdgeInsets.fromLTRB(h(20), h(12), h(12), h(12)),
+          child: Row(
+            children: [
+              BackArrowButton(onTap: widget.onBack),
+              SizedBox(width: h(12)),
+              Expanded(
+                child: Text(
+                  '홍보 콘텐츠 생성 결과',
+                  style: widget.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: _deleteCurrentContent,
-              child: Text(
-                '삭제',
-                style: widget.textTheme.titleSmall?.copyWith(
-                  color: AppTheme.dangerText,
-                  fontWeight: FontWeight.w700,
-                ),
+              IconButton(
+                onPressed: _deleteCurrentContent,
+                icon: const Icon(Icons.delete_outline, color: AppTheme.textTertiary),
+                tooltip: '삭제',
               ),
-            ),
+            ],
+          ),
+        ),
+        TabBar(
+          indicatorColor: AppTheme.primaryColor,
+          labelColor: AppTheme.primaryColor,
+          unselectedLabelColor: AppTheme.textTertiary,
+          labelStyle: widget.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          tabs: const [
+            Tab(text: '인스타그램'),
+            Tab(text: '당근마켓'),
+            Tab(text: '네이버 블로그'),
           ],
         ),
-        SizedBox(height: h(18)),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: h(12), vertical: h(9)),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF2F0FF),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            '✨ ${widget.generationLabel(widget.detail.generationType)}',
-            style: widget.textTheme.titleMedium?.copyWith(
-              fontSize: f(16),
-              fontWeight: FontWeight.w700,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-        ),
-        SizedBox(height: h(12)),
         Expanded(
-          child: SingleChildScrollView(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppTheme.borderColor),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppTheme.shadowColor,
-                    blurRadius: 12,
-                    offset: Offset(0, 3),
-                  ),
-                ],
+          child: TabBarView(
+            children: [
+              _ChannelResultCard(
+                label: '인스타그램',
+                controller: _instaController,
+                imageUrl: widget.detail.images.isNotEmpty ? widget.detail.images.first.url : '',
+                onCopy: () => _copyToClipboard(_instaController.text),
+                onShare: () => _shareContent(_instaController.text),
+                onRegenerate: () => _partialRegenerate('인스타그램'),
+                onSave: () => _saveChannel('인스타그램'),
+                isRegenerating: _channelLoading['인스타그램'] ?? false,
+                isChanged: _isChanged('인스타그램'),
+                isSaving: _isSaving,
+                brandColor: const Color(0xFFE1306C),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    child: SizedBox(
-                      height: h(240),
-                      width: double.infinity,
-                      child: heroUrl.isNotEmpty
-                          ? Image.network(
-                              heroUrl,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: const Color(0xFFF4E3E3),
-                                child: const Center(
-                                  child: Text('📸', style: TextStyle(fontSize: 54)),
-                                ),
-                              ),
-                            )
-                          : Container(
-                              color: const Color(0xFFF4E3E3),
-                              child: const Center(
-                                child: Text('📸', style: TextStyle(fontSize: 54)),
-                              ),
-                            ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(h(20), h(22), h(20), h(20)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          titleText,
-                          style: widget.textTheme.headlineSmall?.copyWith(
-                            fontSize: f(22),
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
-                            height: 1.45,
-                          ),
-                        ),
-                        SizedBox(height: h(22)),
-                        Text(
-                          bodyText,
-                          style: widget.textTheme.bodyLarge?.copyWith(
-                            fontSize: f(18),
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.textSecondary,
-                            height: 1.75,
-                          ),
-                        ),
-                        if (hashtags.isNotEmpty) ...[
-                          SizedBox(height: h(20)),
-                          const Divider(color: AppTheme.dividerColor),
-                          const SizedBox(height: 18),
-                          Text(
-                            hashtags,
-                            style: widget.textTheme.bodyLarge?.copyWith(
-                              fontSize: f(17),
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.primaryColor,
-                              height: 1.7,
-                            ),
-                          ),
-                        ],
-                        _PlatformExtra(
-                          label: '당근',
-                          text: widget.detail.contentData.karrot.text,
-                          tags: widget.detail.contentData.karrot.hashtagsLine,
-                          textTheme: widget.textTheme,
-                        ),
-                        _PlatformExtra(
-                          label: '네이버',
-                          text: widget.detail.contentData.naver.text,
-                          tags: widget.detail.contentData.naver.hashtagsLine,
-                          textTheme: widget.textTheme,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              _ChannelResultCard(
+                label: '당근마켓',
+                controller: _karrotController,
+                imageUrl: widget.detail.images.isNotEmpty ? widget.detail.images.first.url : '',
+                onCopy: () => _copyToClipboard(_karrotController.text),
+                onShare: () => _shareContent(_karrotController.text),
+                onRegenerate: () => _partialRegenerate('당근마켓'),
+                onSave: () => _saveChannel('당근마켓'),
+                isRegenerating: _channelLoading['당근마켓'] ?? false,
+                isChanged: _isChanged('당근마켓'),
+                isSaving: _isSaving,
+                brandColor: const Color(0xFFFF7E36),
               ),
-            ),
+              _ChannelResultCard(
+                label: '네이버 블로그',
+                controller: _naverController,
+                imageUrl: widget.detail.images.isNotEmpty ? widget.detail.images.first.url : '',
+                onCopy: () => _copyToClipboard(_naverController.text),
+                onShare: () => _shareContent(_naverController.text),
+                onRegenerate: () => _partialRegenerate('네이버 블로그'),
+                onSave: () => _saveChannel('네이버 블로그'),
+                isRegenerating: _channelLoading['네이버 블로그'] ?? false,
+                isChanged: _isChanged('네이버 블로그'),
+                isSaving: _isSaving,
+                brandColor: const Color(0xFF03C75A),
+              ),
+            ],
           ),
-        ),
-        SizedBox(height: h(16)),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              flex: 3,
-              child: SizedBox(
-                height: h(_actionButtonHeight),
-                child: OutlinedButton(
-                  onPressed: _isPreparingRegenerate ? null : _goToStep2ForRegenerate,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    padding: EdgeInsets.symmetric(horizontal: h(8)),
-                    side: const BorderSide(color: AppTheme.primaryColor, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    backgroundColor: AppTheme.surfaceColor,
-                  ),
-                  child: Text(
-                    _isPreparingRegenerate ? '불러오는 중...' : '재생성',
-                    style: widget.textTheme.titleMedium?.copyWith(
-                      fontSize: f(18),
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: h(12)),
-            Expanded(
-              flex: 6,
-              child: PrimaryButton(
-                text: '공유하기 →',
-                height: _actionButtonHeight,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                onPressed: widget.onShare,
-              ),
-            ),
-          ],
         ),
       ],
     );
   }
 }
 
-class _PlatformExtra extends StatelessWidget {
-  const _PlatformExtra({
+class _ChannelResultCard extends StatelessWidget {
+  const _ChannelResultCard({
     required this.label,
-    required this.text,
-    required this.tags,
-    required this.textTheme,
+    required this.controller,
+    required this.imageUrl,
+    required this.onCopy,
+    required this.onShare,
+    required this.onRegenerate,
+    required this.onSave,
+    required this.isRegenerating,
+    required this.isChanged,
+    required this.isSaving,
+    required this.brandColor,
   });
 
   final String label;
-  final String text;
-  final String tags;
-  final TextTheme textTheme;
+  final TextEditingController controller;
+  final String imageUrl;
+  final VoidCallback onCopy;
+  final VoidCallback onShare;
+  final VoidCallback onRegenerate;
+  final VoidCallback onSave;
+  final bool isRegenerating;
+  final bool isChanged;
+  final bool isSaving;
+  final Color brandColor;
 
   @override
   Widget build(BuildContext context) {
-    if (text.trim().isEmpty && tags.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        Text(
-          label,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (text.trim().isNotEmpty)
-          Text(
-            text,
-            style: textTheme.bodyLarge?.copyWith(
-              height: 1.6,
-              color: AppTheme.textSecondary,
+    final h = (double v) => AppLayout.h(context, v);
+    final f = (double v) => AppLayout.f(context, v);
+    final textTheme = Theme.of(context).textTheme;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(h(20)),
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppTheme.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: brandColor.withOpacity(0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (imageUrl.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    child: Image.network(
+                      imageUrl,
+                      height: h(220),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                Padding(
+                  padding: EdgeInsets.all(h(20)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: brandColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              label,
+                              style: textTheme.labelLarge?.copyWith(
+                                color: brandColor,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          if (isChanged)
+                            TextButton.icon(
+                              onPressed: isSaving ? null : onSave,
+                              icon: isSaving
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.check_circle_outline, size: 18),
+                              label: Text(isSaving ? '저장 중' : '저장하기'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.primaryColor,
+                                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            )
+                          else
+                            const Icon(Icons.edit_note_rounded, color: AppTheme.textTertiary),
+                        ],
+                      ),
+                      SizedBox(height: h(16)),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.backgroundColor.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isChanged ? brandColor.withOpacity(0.3) : AppTheme.borderColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        child: TextField(
+                          controller: controller,
+                          maxLines: null,
+                          style: textTheme.bodyLarge?.copyWith(
+                            fontSize: f(17),
+                            height: 1.6,
+                            color: AppTheme.textPrimary,
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '이곳을 눌러 문구를 직접 수정해 보세요.',
+                            hintStyle: TextStyle(color: AppTheme.textTertiary, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        if (tags.trim().isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            tags,
-            style: textTheme.bodyMedium?.copyWith(
-              color: AppTheme.primaryColor,
-              fontWeight: FontWeight.w500,
-            ),
+          SizedBox(height: h(20)),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.copy_rounded,
+                  label: '복사하기',
+                  onTap: onCopy,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              SizedBox(width: h(10)),
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.share_rounded,
+                  label: '공유하기',
+                  onTap: onShare,
+                  color: brandColor,
+                ),
+              ),
+              SizedBox(width: h(10)),
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.refresh_rounded,
+                  label: '재생성',
+                  onTap: onRegenerate,
+                  color: AppTheme.primaryColor,
+                  isLoading: isRegenerating,
+                ),
+              ),
+            ],
           ),
+          SizedBox(height: h(40)),
         ],
-      ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.color,
+    this.isLoading = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color color;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: isLoading ? null : onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isLoading ? color.withOpacity(0.05) : Colors.transparent,
+          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            if (isLoading)
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              )
+            else
+              Icon(icon, color: color, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              isLoading ? '생성 중' : label,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

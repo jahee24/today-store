@@ -2,6 +2,7 @@ import 'package:fronted/presentation/screens/content_creation/step2_photo_descri
 import 'package:fronted/presentation/screens/content_creation/step3_style_select.dart';
 import 'package:fronted/presentation/screens/content_creation/step4_preview_generate.dart';
 import 'package:fronted/presentation/screens/image_content_creation/image_step1_photo_upload.dart';
+import 'package:fronted/presentation/screens/processing/image_status_screen.dart';
 import 'package:fronted/presentation/screens/processing/processing_loading.dart';
 import 'package:fronted/presentation/screens/result_view/image_result_view.dart';
 import 'package:fronted/presentation/screens/result_view/result_view.dart';
@@ -20,115 +21,148 @@ import '../presentation/screens/history/history_screen.dart';
 import '../presentation/screens/settings/settings_screen.dart';
 import '../presentation/screens/address/map_location_picker_screen.dart';
 import '../presentation/screens/address/address_search_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/providers/auth_provider.dart';
 
-final router = GoRouter(
-  initialLocation: '/',
-  
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const SplashScreen(),
-    ),
+final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
 
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+  return GoRouter(
+    initialLocation: '/',
+    redirect: (context, state) {
+      final isLoggingIn = state.matchedLocation == '/login';
+      final isSplash = state.matchedLocation == '/';
+      
+      // 인증되지 않은 상태에서 보호된 화면에 접근하려 할 때
+      if (authState.status == AuthStatus.unauthenticated && !isLoggingIn && !isSplash) {
+        return '/login';
+      }
 
-    GoRoute(
-      path: '/profile-setup',
-      builder: (context, state) => const ProfileSetupScreen(),
-    ),
+      // 이미 인증된 상태에서 로그인 화면에 접근하려 할 때
+      if (authState.status == AuthStatus.authenticated && isLoggingIn) {
+        return authState.isFirstLogin ? '/profile-setup' : '/dashboard';
+      }
 
-    GoRoute(
-      path: '/profile-edit',
-      builder: (context, state) => const ProfileEditScreen(),
-    ),
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const SplashScreen(),
+      ),
 
-    GoRoute(
-      path: '/sns-management',
-      builder: (context, state) => const SnsManagementScreen(),
-    ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
 
-    GoRoute(
-      path: '/address-search',
-      builder: (context, state) => const AddressSearchScreen(),
-    ),
+      GoRoute(
+        path: '/profile-setup',
+        builder: (context, state) => const ProfileSetupScreen(),
+      ),
 
-    GoRoute(
-      path: '/map-location-picker',
-      builder: (context, state) => const MapLocationPickerScreen(),
-    ),
+      GoRoute(
+        path: '/profile-edit',
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
 
-    GoRoute(
-      path: '/dashboard',
-      builder: (context, state) => const DashboardScreen(),
-    ),
+      GoRoute(
+        path: '/sns-management',
+        builder: (context, state) => const SnsManagementScreen(),
+      ),
 
-    GoRoute(
-      path: '/step1',
-      builder: (context, state) => const Step1PhotoUpload(),
-    ),
+      GoRoute(
+        path: '/address-search',
+        builder: (context, state) => const AddressSearchScreen(),
+      ),
 
-    GoRoute(
-      path: '/image-step1',
-      builder: (context, state) => const ImageStep1PhotoUpload(),
-    ),
+      GoRoute(
+        path: '/map-location-picker',
+        builder: (context, state) => const MapLocationPickerScreen(),
+      ),
 
-    GoRoute(
-      path: '/step2',
-      builder: (context, state) => const Step2PhotoDescription(),
-    ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardScreen(),
+      ),
 
-    GoRoute(
-      path: '/step3',
-      builder: (context, state) => const Step3StyleSelect(),
-    ),
+      GoRoute(
+        path: '/step1',
+        builder: (context, state) => const Step1PhotoUpload(),
+      ),
 
-    GoRoute(
-      path: '/step4',
-      builder: (context, state) => const Step4PreviewGenerate(),
-    ),
+      GoRoute(
+        path: '/image-step1',
+        builder: (context, state) => const ImageStep1PhotoUpload(),
+      ),
 
-    GoRoute(
-      path: '/processing',
-      builder: (context, state) {
-        final modeParam = state.uri.queryParameters['mode'];
-        final mode = modeParam == 'image'
-            ? ProcessingMode.image
-            : ProcessingMode.text;
-        return ProcessingLoadingScreen(mode: mode);
-      },
-    ),
+      GoRoute(
+        path: '/step2',
+        builder: (context, state) => const Step2PhotoDescription(),
+      ),
 
-    GoRoute(
-      path: '/result',
-      builder: (context, state) => const ResultViewScreen(),
-    ),
+      GoRoute(
+        path: '/step3',
+        builder: (context, state) => const Step3StyleSelect(),
+      ),
 
-    GoRoute(
-      path: '/image-result',
-      builder: (context, state) => const ImageResultViewScreen(),
-    ),
+      GoRoute(
+        path: '/step4',
+        builder: (context, state) => const Step4PreviewGenerate(),
+      ),
 
-    GoRoute(
-      path: '/share',
-      builder: (context, state) => const ShareOptionsScreen(),
-    ),
+      GoRoute(
+        path: '/processing',
+        builder: (context, state) {
+          final modeParam = state.uri.queryParameters['mode'];
+          final mode = modeParam == 'image'
+              ? ProcessingMode.image
+              : ProcessingMode.text;
+          return ProcessingLoadingScreen(mode: mode);
+        },
+      ),
 
-    GoRoute(
-      path: '/install-prompt',
-      builder: (context, state) => const AppInstallPromptScreen(),
-    ),
+      GoRoute(
+        path: '/install-prompt',
+        builder: (context, state) => const AppInstallPromptScreen(),
+      ),
 
-    GoRoute(
-      path: '/history',
-      builder: (context, state) => const HistoryScreen(),
-    ),
+      GoRoute(
+        path: '/result',
+        builder: (context, state) => const ResultViewScreen(),
+      ),
 
-    GoRoute(
-      path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
-    ),
-  ],
-);
+      GoRoute(
+        path: '/image-result',
+        builder: (context, state) => const ImageResultViewScreen(),
+      ),
+
+      GoRoute(
+        path: '/image-status',
+        builder: (context, state) {
+          final requestId = state.uri.queryParameters['requestId'] ?? '';
+          final inputImageId = state.uri.queryParameters['inputImageId'] ?? '';
+          return ImageStatusScreen(
+            requestId: requestId,
+            inputImageId: inputImageId,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/share',
+        builder: (context, state) => const ShareOptionsScreen(),
+      ),
+
+      GoRoute(
+        path: '/history',
+        builder: (context, state) => const HistoryScreen(),
+      ),
+
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+    ],
+  );
+});

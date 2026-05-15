@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../services/token_service.dart';
-import '../datasources/remote/api_client.dart';
+import 'network_provider.dart';
 import '../datasources/remote/content_api.dart';
 import '../models/content_model.dart';
 import '../models/store_model.dart';
@@ -32,17 +31,8 @@ class DashboardData {
   });
 }
 
-final dashboardTokenServiceProvider = Provider<TokenService>((ref) {
-  return TokenService();
-});
-
-final dashboardApiClientProvider = Provider<ApiClient>((ref) {
-  final tokenService = ref.watch(dashboardTokenServiceProvider);
-  return ApiClient(tokenService: tokenService);
-});
-
 final contentApiProvider = Provider<ContentApi>((ref) {
-  final apiClient = ref.watch(dashboardApiClientProvider);
+  final apiClient = ref.watch(apiClientProvider);
   return ContentApi(apiClient.dio);
 });
 

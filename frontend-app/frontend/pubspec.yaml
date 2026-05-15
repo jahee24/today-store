@@ -33,6 +33,7 @@ dependencies:
   flutter_image_compress: ^2.1.0
   cached_network_image: ^3.3.0
   permission_handler: ^11.3.1
+  gal: ^2.3.0
 
   # JSON 자동 생성
   json_annotation: ^4.8.1
