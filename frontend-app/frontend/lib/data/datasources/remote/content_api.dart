@@ -132,19 +132,59 @@ class ContentApi {
     await dio.delete('/api/v1/contents/$contentId');
   }
 
+  /// 텍스트+해시태그 혼합 문자열을 분리합니다.
+  static Map<String, dynamic> _splitTextAndHashtags(String combined) {
+    final lines = combined.split('\n');
+    final textLines = <String>[];
+    final hashtags = <String>[];
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+      // 해시태그 라인: '#' 으로 시작하는 단어가 포함된 줄
+      if (trimmed.startsWith('#')) {
+        // 여러 해시태그가 공백으로 나뉘어 있을 수 있음
+        final tags = trimmed
+            .split(RegExp(r'\s+'))
+            .where((t) => t.startsWith('#') && t.length > 1)
+            .map((t) => t.substring(1)) // '#' 제거
+            .toList();
+        hashtags.addAll(tags);
+      } else {
+        textLines.add(line);
+      }
+    }
+
+    // 뒤쪽 빈 줄 정리
+    while (textLines.isNotEmpty && textLines.last.trim().isEmpty) {
+      textLines.removeLast();
+    }
+
+    return {
+      'text': textLines.join('\n').trim(),
+      'hashtags': hashtags,
+    };
+  }
+
   Future<ContentDetail> updateContent({
     required String contentId,
     String? instagramText,
     String? karrotText,
     String? naverText,
   }) async {
+    final data = <String, dynamic>{};
+    if (instagramText != null) {
+      data['instagram'] = _splitTextAndHashtags(instagramText);
+    }
+    if (karrotText != null) {
+      data['karrot'] = _splitTextAndHashtags(karrotText);
+    }
+    if (naverText != null) {
+      data['naver'] = _splitTextAndHashtags(naverText);
+    }
+
     final response = await dio.patch(
       '/api/v1/contents/$contentId',
-      data: {
-        if (instagramText != null) 'instagramText': instagramText,
-        if (karrotText != null) 'karrotText': karrotText,
-        if (naverText != null) 'naverText': naverText,
-      },
+      data: data,
     );
     return ContentDetail.fromJson(response.data as Map<String, dynamic>);
   }

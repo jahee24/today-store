@@ -76,10 +76,7 @@ class _Step2PhotoDescriptionState extends ConsumerState<Step2PhotoDescription> {
     final h = (double v) => AppLayout.h(context, v);
     final contentState = ref.watch(contentCreationProvider);
     final images = contentState.images;
-    final canProceed = _everyPhotoHasDescription(
-      images.length,
-      contentState.descriptions,
-    );
+    final canProceed = images.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
