@@ -18,11 +18,10 @@ class SplashNotifier extends AsyncNotifier<SplashStatus> {
   @override
   Future<SplashStatus> build() async {
     await Future.delayed(const Duration(milliseconds: 1800));
-
-    final authRepository = ref.read(authRepositoryProvider);
+    
     final bool isAuthenticated;
     try {
-      isAuthenticated = await authRepository.tryAutoLogin();
+      isAuthenticated = await ref.read(authProvider.notifier).tryAutoLogin();
     } catch (_) {
       return SplashStatus.unauthenticated;
     }

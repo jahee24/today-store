@@ -131,4 +131,21 @@ class ContentApi {
   }) async {
     await dio.delete('/api/v1/contents/$contentId');
   }
+
+  Future<ContentDetail> updateContent({
+    required String contentId,
+    String? instagramText,
+    String? karrotText,
+    String? naverText,
+  }) async {
+    final response = await dio.patch(
+      '/api/v1/contents/$contentId',
+      data: {
+        if (instagramText != null) 'instagramText': instagramText,
+        if (karrotText != null) 'karrotText': karrotText,
+        if (naverText != null) 'naverText': naverText,
+      },
+    );
+    return ContentDetail.fromJson(response.data as Map<String, dynamic>);
+  }
 }

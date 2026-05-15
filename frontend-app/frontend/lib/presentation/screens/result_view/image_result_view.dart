@@ -1,16 +1,28 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
+import '../../../data/models/content_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
 import '../../../data/providers/image_content_creation_provider.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
 import '../../widgets/buttons/primary_button.dart';
 
-class ImageResultViewScreen extends ConsumerWidget {
+class ImageResultViewScreen extends ConsumerStatefulWidget {
   const ImageResultViewScreen({super.key});
+
+  @override
+  ConsumerState<ImageResultViewScreen> createState() => _ImageResultViewScreenState();
+}
+
+class _ImageResultViewScreenState extends ConsumerState<ImageResultViewScreen> {
+  bool _isSaving = false;
 
   void _handleBack(BuildContext context) {
     if (context.canPop()) {
@@ -20,8 +32,63 @@ class ImageResultViewScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _saveAllImages(List<ImageVariationItem> variations) async {
+    if (_isSaving || variations.isEmpty) return;
+
+    setState(() => _isSaving = true);
+    int successCount = 0;
+
+    try {
+      // 1. 권한 확인
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        final granted = await Gal.requestAccess();
+        if (!granted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('갤러리 접근 권한이 필요합니다.')),
+            );
+          }
+          return;
+        }
+      }
+
+      final dio = Dio();
+      final tempDir = await getTemporaryDirectory();
+
+      for (var i = 0; i < variations.length; i++) {
+        final url = variations[i].url;
+        final response = await dio.get(
+          url,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        
+        if (response.data != null) {
+          final file = File('${tempDir.path}/save_image_${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
+          await file.writeAsBytes(response.data as List<int>);
+          await Gal.putImage(file.path);
+          successCount++;
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$successCount개의 이미지를 앨범에 저장했어요.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미지 저장 중 오류가 발생했습니다.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final h = (double v) => AppLayout.h(context, v);
     final f = (double v) => AppLayout.f(context, v);
@@ -232,7 +299,8 @@ class ImageResultViewScreen extends ConsumerWidget {
                       height: 62,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      onPressed: null,
+                      isLoading: _isSaving,
+                      onPressed: variations.isEmpty ? null : () => _saveAllImages(variations),
                     ),
                   ),
                 ],

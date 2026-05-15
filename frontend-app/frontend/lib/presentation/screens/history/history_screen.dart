@@ -44,6 +44,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   _HistoryType? _selectedType;
   String _query = '';
 
+  @override
+  void initState() {
+    super.initState();
+    // 화면 진입마다 최신 이력 fetch (로그아웃 후 재로그인 시에도 갱신)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(historyRequestsProvider);
+    });
+  }
+
   List<_HistoryItem> _buildFilteredItems(List<ContentRequestItem> requests) {
     final items = requests.map((request) {
       final isImage = request.concept.trim() == '이미지 베리에이션';
@@ -84,6 +93,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       return;
     }
 
+    // 이미지 베리에이션 항목: 별도 상태 확인 화면으로 이동
+    if (item.type == _HistoryType.image) {
+      await _openImageItem(requestId);
+      return;
+    }
+
+    // 텍스트 항목: 기존 결과 화면으로 이동
     try {
       final repository = ref.read(contentRepositoryProvider);
       final res = await repository.getRequestContents(requestId: requestId);
@@ -115,6 +131,47 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       );
     }
   }
+
+  /// 이미지 베리에이션 항목 열기:
+  /// requestDetail에서 inputImageId를 가져온 뒤 /image-status 화면으로 이동.
+  /// - 생성 중이면: 폴링 로딩 화면 표시
+  /// - 완료이면: 자동으로 이미지 결과 화면으로 이동
+  /// - 실패이면: 에러 안내
+  Future<void> _openImageItem(String requestId) async {
+    try {
+      final repository = ref.read(contentRepositoryProvider);
+      final detail = await repository.getRequestDetail(requestId: requestId);
+
+      if (detail.images.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미지 정보를 불러오지 못했어요.')),
+        );
+        return;
+      }
+
+      final inputImageId = detail.images.first.id.trim();
+      if (inputImageId.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미지 정보를 불러오지 못했어요.')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      context.push(
+        '/image-status?requestId=${Uri.encodeComponent(requestId)}'
+        '&inputImageId=${Uri.encodeComponent(inputImageId)}',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이미지 정보를 불러오지 못했어요.')),
+      );
+    }
+  }
+
 
   void _selectFilter(_HistoryType? type) {
     setState(() => _selectedType = type);
@@ -175,52 +232,73 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 child: historyAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
                   error: (_, __) => Center(
-                    child: Text(
-                      '콘텐츠 이력을 불러오지 못했어요.',
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.textTertiary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '콘텐츠 이력을 불러오지 못했어요.',
+                          style: textTheme.bodyLarge?.copyWith(
+                            color: AppTheme.textTertiary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: h(12)),
+                        TextButton(
+                          onPressed: () => ref.invalidate(historyRequestsProvider),
+                          child: const Text('다시 시도'),
+                        ),
+                      ],
                     ),
                   ),
                   data: (response) {
                     final requests = response.data;
                     final items = _buildFilteredItems(requests);
                     if (items.isEmpty) {
-                      return Center(
-                        child: Text(
-                          requests.isEmpty ? '아직 생성된 콘텐츠가 없어요.' : '검색 결과가 없어요.',
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: AppTheme.textTertiary,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      return RefreshIndicator(
+                        onRefresh: () async => ref.invalidate(historyRequestsProvider),
+                        child: ListView(
+                          children: [
+                            SizedBox(height: h(80)),
+                            Center(
+                              child: Text(
+                                requests.isEmpty ? '아직 생성된 콘텐츠가 없어요.' : '검색 결과가 없어요.',
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: AppTheme.textTertiary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }
-                    return ListView.separated(
-                      itemCount: items.length,
-                      separatorBuilder: (context, index) => SizedBox(height: h(12)),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        final isImage = item.type == _HistoryType.image;
-                        return RecentContentCard(
-                          title: item.title,
-                          subtitle: item.meta,
-                          badgeText: isImage ? '이미지' : '문구',
-                          badgeTextColor: isImage
-                              ? const Color(0xFF5B9B4C)
-                              : AppTheme.primaryColor,
-                          badgeBgColor: isImage
-                              ? const Color(0xFFEAF6E5)
-                              : const Color(0xFFEEEAFE),
-                          thumbnailEmoji: isImage ? '🎨' : '📸',
-                          thumbnailUrl: item.thumbnailUrl,
-                          thumbnailBgColor: isImage
-                              ? const Color(0xFFE6F2F5)
-                              : const Color(0xFFF7ECEA),
-                          onTap: () => _openItem(item),
-                        );
-                      },
+                    return RefreshIndicator(
+                      onRefresh: () async => ref.invalidate(historyRequestsProvider),
+                      child: ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (context, index) => SizedBox(height: h(12)),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          final isImage = item.type == _HistoryType.image;
+                          return RecentContentCard(
+                            title: item.title,
+                            subtitle: item.meta,
+                            badgeText: isImage ? '이미지' : '문구',
+                            badgeTextColor: isImage
+                                ? const Color(0xFF5B9B4C)
+                                : AppTheme.primaryColor,
+                            badgeBgColor: isImage
+                                ? const Color(0xFFEAF6E5)
+                                : const Color(0xFFEEEAFE),
+                            thumbnailEmoji: isImage ? '🎨' : '📸',
+                            thumbnailUrl: item.thumbnailUrl,
+                            thumbnailBgColor: isImage
+                                ? const Color(0xFFE6F2F5)
+                                : const Color(0xFFF7ECEA),
+                            onTap: () => _openItem(item),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

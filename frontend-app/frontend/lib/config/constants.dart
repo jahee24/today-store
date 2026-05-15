@@ -7,6 +7,9 @@ class AppKeys {
   static const String naverMapClientSecret = String.fromEnvironment(
     'NAVER_MAP_CLIENT_SECRET',
   );
+  static const String kakaoRestApiKey = String.fromEnvironment(
+    'KAKAO_REST_API_KEY',
+  );
 }
 
 class AppLayout {

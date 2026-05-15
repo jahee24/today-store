@@ -86,4 +86,18 @@ class ContentRepository {
   }) {
     return contentApi.deleteContent(contentId: contentId);
   }
+
+  Future<ContentDetail> updateContent({
+    required String contentId,
+    String? instagramText,
+    String? karrotText,
+    String? naverText,
+  }) {
+    return contentApi.updateContent(
+      contentId: contentId,
+      instagramText: instagramText,
+      karrotText: karrotText,
+      naverText: naverText,
+    );
+  }
 }

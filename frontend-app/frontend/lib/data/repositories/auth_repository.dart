@@ -73,7 +73,17 @@ class AuthRepository {
   Future<UserModel> updateMyProfile({
     String? name,
     String? email,
-  }) {
-    return authApi.updateMyProfile(name: name, email: email);
+  }) async {
+    final result = await authApi.updateMyProfile(name: name, email: email);
+
+    // 이메일 변경 시 백엔드가 새 JWT를 내려줌 → 저장해야 세션 유지
+    if (result.accessToken != null && result.accessToken!.isNotEmpty) {
+      await tokenService.saveAccessToken(result.accessToken!);
+    }
+    if (result.refreshToken != null && result.refreshToken!.isNotEmpty) {
+      await tokenService.saveRefreshToken(result.refreshToken!);
+    }
+
+    return result.user;
   }
 }

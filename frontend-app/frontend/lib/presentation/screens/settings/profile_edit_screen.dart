@@ -86,9 +86,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     try {
       final authRepository = ref.read(authRepositoryProvider);
       final updatedUser = await authRepository.updateMyProfile(
-        name: hasNameChanged ? trimmedName : null,
-        email: hasEmailChanged ? trimmedEmail : null,
+        name: trimmedName,
+        email: trimmedEmail,
       );
+
       _initialName = updatedUser.name;
       _initialEmail = updatedUser.email;
       _nameController.text = updatedUser.name;
@@ -99,6 +100,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       if (!mounted) {
         return;
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('프로필이 저장되었어요.')),
+      );
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) {

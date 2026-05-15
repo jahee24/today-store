@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../services/token_service.dart';
-import '../datasources/remote/api_client.dart';
+import 'network_provider.dart';
 import '../datasources/remote/store_api.dart';
 import '../models/store_model.dart';
 import '../repositories/store_repository.dart';
@@ -39,15 +38,6 @@ class StoreState {
     );
   }
 }
-
-final tokenServiceProvider = Provider<TokenService>((ref) {
-  return TokenService();
-});
-
-final apiClientProvider = Provider<ApiClient>((ref) {
-  final tokenService = ref.watch(tokenServiceProvider);
-  return ApiClient(tokenService: tokenService);
-});
 
 final storeApiProvider = Provider<StoreApi>((ref) {
   final apiClient = ref.watch(apiClientProvider);
