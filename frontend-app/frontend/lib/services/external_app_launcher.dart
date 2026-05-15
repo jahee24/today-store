@@ -54,6 +54,17 @@ extension StoreListingAppX on StoreListingApp {
   Uri get appStoreUri {
     switch (this) {
       case StoreListingApp.instagram:
+        return Uri.parse('itms-apps://itunes.apple.com/app/id389801252');
+      case StoreListingApp.daangn:
+        return Uri.parse('itms-apps://itunes.apple.com/app/id1018769995');
+      case StoreListingApp.naver:
+        return Uri.parse('itms-apps://itunes.apple.com/app/id393499958');
+    }
+  }
+
+  Uri get appStoreWebUri {
+    switch (this) {
+      case StoreListingApp.instagram:
         return Uri.parse('https://apps.apple.com/app/instagram/id389801252');
       case StoreListingApp.daangn:
         return Uri.parse(
@@ -183,10 +194,19 @@ class ExternalAppLauncher {
       }
     }
 
-    final web = app.storeUri;
-    if (!await canLaunchUrl(web)) {
-      return false;
+    final storeUri = app.storeUri;
+    // iOS에서 itms-apps:// 가 실패할 수 있으므로(시뮬레이터 등) 체크
+    if (await canLaunchUrl(storeUri)) {
+      final ok = await launchUrl(storeUri, mode: LaunchMode.externalApplication);
+      if (ok) return true;
     }
-    return launchUrl(web, mode: LaunchMode.externalApplication);
+
+    // 폴백: 웹 브라우저로 열기
+    final webUri = Platform.isIOS ? app.appStoreWebUri : app.playStoreUri;
+    if (await canLaunchUrl(webUri)) {
+      return launchUrl(webUri, mode: LaunchMode.externalApplication);
+    }
+
+    return false;
   }
 }

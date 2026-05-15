@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
@@ -374,11 +373,8 @@ class _ResultBodyState extends ConsumerState<_ResultBody> {
   }
 
   void _shareContent(String text) {
-    final box = context.findRenderObject() as RenderBox?;
-    Share.share(
-      text,
-      sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
-    );
+    // 딥링크 공유 화면으로 이동 (인스타그램/당근/네이버 앱 열기 지원)
+    context.push('/share?contentId=${widget.contentId}');
   }
 
   @override
