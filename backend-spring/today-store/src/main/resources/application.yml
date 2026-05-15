@@ -90,6 +90,9 @@ app:
     deployment-id: ${RUNCOMFY_DEPLOYMENT_ID}
     endpoint: "https://api.runcomfy.net"
     webhook-url: ${RUNCOMFY_WEBHOOK_URL}
+  resend:
+    api-key: ${RESEND_API_KEY}
+    from-email: ${RESEND_FROM_EMAIL}
 
 instagram:
   app-id: ${INSTAGRAM_APP_ID}

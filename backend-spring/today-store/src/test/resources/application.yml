@@ -73,6 +73,10 @@ app:
     deployment-id: "test-runcomfy-deployment-id"
     endpoint: "https://api.runcomfy.net"
     webhook-url: "test-webhook-url"
+  resend:
+    api-key: "test-resend-key"
+    from-email: "test-resend-from-email"
+
 
 instagram:
   app-id: "instagram-app-id"
