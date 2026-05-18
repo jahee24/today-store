@@ -12,7 +12,9 @@ import '../../../config/constants.dart';
 import '../../../data/models/content_model.dart';
 import '../../../data/providers/dashboard_provider.dart';
 import '../../../services/external_app_launcher.dart';
+import '../../../services/sns_app_link_tracker.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
+import '../../widgets/dialogs/app_install_dialog.dart';
 
 /// 공유 채널 선택 (딥링크·복사 등).
 class ShareOptionsScreen extends ConsumerStatefulWidget {
@@ -98,6 +100,7 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
           ) ??
           false;
       if (openedInstagram) {
+        await SnsAppLinkTracker.markOpened(StoreListingApp.instagram);
         return;
       }
 
@@ -106,7 +109,7 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
           await ExternalAppLauncher.isAppInstalled(StoreListingApp.instagram);
       if (!mounted) return;
       if (!instagramInstalled) {
-        await context.push('/install-prompt?target=instagram');
+        await AppInstallDialog.show(context, app: StoreListingApp.instagram);
         return;
       }
 
@@ -132,14 +135,16 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
     final installed = await ExternalAppLauncher.canOpenApp(StoreListingApp.daangn);
     if (!mounted) return;
     if (!installed) {
-      await context.push('/install-prompt?target=daangn');
+      await AppInstallDialog.show(context, app: StoreListingApp.daangn);
       return;
     }
     final opened = await ExternalAppLauncher.openApp(StoreListingApp.daangn);
     if (!mounted) return;
-    if (!opened) {
-      await context.push('/install-prompt?target=daangn');
+    if (opened) {
+      await SnsAppLinkTracker.markOpened(StoreListingApp.daangn);
+      return;
     }
+    await AppInstallDialog.show(context, app: StoreListingApp.daangn);
   }
 
   Future<void> _openNaver() async {
@@ -147,14 +152,16 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
     final installed = await ExternalAppLauncher.canOpenApp(StoreListingApp.naver);
     if (!mounted) return;
     if (!installed) {
-      await context.push('/install-prompt?target=naver');
+      await AppInstallDialog.show(context, app: StoreListingApp.naver);
       return;
     }
     final opened = await ExternalAppLauncher.openApp(StoreListingApp.naver);
     if (!mounted) return;
-    if (!opened) {
-      await context.push('/install-prompt?target=naver');
+    if (opened) {
+      await SnsAppLinkTracker.markOpened(StoreListingApp.naver);
+      return;
     }
+    await AppInstallDialog.show(context, app: StoreListingApp.naver);
   }
 
   String _composeShareCopyText(ContentDetail detail) {
@@ -172,7 +179,7 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
       buf.writeln(ht);
     }
     _appendPlatformCopy(buf, '당근', detail.contentData.karrot);
-    _appendPlatformCopy(buf, '네이버', detail.contentData.naver);
+    _appendPlatformCopy(buf, '네이버 스마트플레이스', detail.contentData.naver);
     return buf.toString().trim();
   }
 
@@ -298,21 +305,11 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
                           ),
                         ),
                         title: 'Instagram',
-                        subtitle: '계정 연동 후 자동 발행',
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.successBg,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '연동됨',
-                            style: textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.successText,
-                              fontSize: 13,
-                            ),
-                          ),
+                        subtitle: 'Instagram 앱으로 이동하여 작성',
+                        trailing: Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: AppTheme.textTertiary,
                         ),
                         onTap: () async {
                           setState(() => _selectedIndex = 0);
@@ -343,7 +340,7 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
                           ),
                         ),
                         title: '당근마켓',
-                        subtitle: '딥링크로 앱에서 바로 작성',
+                        subtitle: '당근마켓 앱으로 이동하여 작성',
                         trailing: Icon(
                           Icons.arrow_forward_ios_rounded,
                           size: 16,
@@ -382,8 +379,8 @@ class _ShareOptionsScreenState extends ConsumerState<ShareOptionsScreen> {
                             ),
                           ),
                         ),
-                        title: '네이버 블로그',
-                        subtitle: '네이버 앱으로 이동하여 작성',
+                        title: '네이버 스마트플레이스',
+                        subtitle: '네이버 스마트플레이스 앱으로 이동하여 작성',
                         trailing: Icon(
                           Icons.arrow_forward_ios_rounded,
                           size: 16,

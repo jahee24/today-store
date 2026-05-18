@@ -34,6 +34,14 @@ class MainActivity : FlutterActivity() {
                         }
                         result.success(isAppInstalled(app))
                     }
+                    "openApp" -> {
+                        val app = call.argument<String>("app")?.trim().orEmpty()
+                        if (app.isEmpty()) {
+                            result.error("INVALID_APP", "app is required", null)
+                            return@setMethodCallHandler
+                        }
+                        result.success(openApp(app))
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -86,7 +94,21 @@ class MainActivity : FlutterActivity() {
             "daangn" ->
                 isPackageInstalled("com.towneers.www") ||
                     isPackageInstalled("com.towneers.hello")
-            "naver" -> isPackageInstalled("com.nhn.android.search")
+            "naver" -> isPackageInstalled("com.naver.smartplace")
+            else -> false
+        }
+    }
+
+    private fun openApp(app: String): Boolean {
+        return when (app) {
+            "naver" -> {
+                val intent =
+                    packageManager.getLaunchIntentForPackage("com.naver.smartplace")
+                        ?: return false
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                true
+            }
             else -> false
         }
     }

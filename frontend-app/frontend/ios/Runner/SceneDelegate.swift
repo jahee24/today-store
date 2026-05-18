@@ -56,6 +56,20 @@ class SceneDelegate: FlutterSceneDelegate, UIDocumentInteractionControllerDelega
           return
         }
         result(self.isAppInstalled(app: app))
+      case "openApp":
+        guard let args = call.arguments as? [String: Any],
+              let app = args["app"] as? String
+        else {
+          result(
+            FlutterError(
+              code: "INVALID_APP",
+              message: "app is required",
+              details: nil
+            )
+          )
+          return
+        }
+        result(self.openApp(app: app))
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -106,8 +120,24 @@ class SceneDelegate: FlutterSceneDelegate, UIDocumentInteractionControllerDelega
       if let u = URL(string: "karrot://"), UIApplication.shared.canOpenURL(u) { return true }
       return false
     case "naver":
-      guard let url = URL(string: "naversearchapp://") else { return false }
-      return UIApplication.shared.canOpenURL(url)
+      return smartPlaceLaunchUrls().contains { UIApplication.shared.canOpenURL($0) }
+    default:
+      return false
+    }
+  }
+
+  private func smartPlaceLaunchUrls() -> [URL] {
+    ["smartplace://", "naversmartplace://"].compactMap { URL(string: $0) }
+  }
+
+  private func openApp(app: String) -> Bool {
+    switch app {
+    case "naver":
+      for url in smartPlaceLaunchUrls() where UIApplication.shared.canOpenURL(url) {
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        return true
+      }
+      return false
     default:
       return false
     }
