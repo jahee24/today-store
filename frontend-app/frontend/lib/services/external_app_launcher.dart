@@ -18,7 +18,7 @@ extension StoreListingAppX on StoreListingApp {
       case StoreListingApp.daangn:
         return '당근마켓';
       case StoreListingApp.naver:
-        return '네이버';
+        return '네이버 스마트플레이스';
     }
   }
 
@@ -30,7 +30,7 @@ extension StoreListingAppX on StoreListingApp {
       case StoreListingApp.daangn:
         return Uri.parse('daangn://');
       case StoreListingApp.naver:
-        return Uri.parse('naversearchapp://');
+        return Uri.parse('smartplace://');
     }
   }
 
@@ -46,7 +46,7 @@ extension StoreListingAppX on StoreListingApp {
         );
       case StoreListingApp.naver:
         return Uri.parse(
-          'https://play.google.com/store/apps/details?id=com.nhn.android.search',
+          'https://play.google.com/store/apps/details?id=com.naver.smartplace',
         );
     }
   }
@@ -58,7 +58,7 @@ extension StoreListingAppX on StoreListingApp {
       case StoreListingApp.daangn:
         return Uri.parse('itms-apps://itunes.apple.com/app/id1018769995');
       case StoreListingApp.naver:
-        return Uri.parse('itms-apps://itunes.apple.com/app/id393499958');
+        return Uri.parse('itms-apps://itunes.apple.com/app/id1521817390');
     }
   }
 
@@ -72,7 +72,7 @@ extension StoreListingAppX on StoreListingApp {
         );
       case StoreListingApp.naver:
         return Uri.parse(
-          'https://apps.apple.com/kr/app/%EB%84%A4%EC%9D%B4%EB%B2%84/id393499958',
+          'https://apps.apple.com/kr/app/%EB%84%A4%EC%9D%B4%EB%B2%84-%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%94%8C%EB%A0%88%EC%9D%B4%EC%8A%A4%EC%84%BC%ED%84%B0/id1521817390',
         );
     }
   }
@@ -90,7 +90,7 @@ extension StoreListingAppX on StoreListingApp {
       case StoreListingApp.daangn:
         return Uri.parse('market://details?id=com.towneers.www');
       case StoreListingApp.naver:
-        return Uri.parse('market://details?id=com.nhn.android.search');
+        return Uri.parse('market://details?id=com.naver.smartplace');
     }
   }
 }
@@ -148,7 +148,28 @@ class ExternalAppLauncher {
     return isAppInstalled(app);
   }
 
+  static Future<bool> _openAppViaNative(StoreListingApp app) async {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return false;
+    }
+    try {
+      final opened = await _shareChannel.invokeMethod<bool>(
+        'openApp',
+        {'app': _nativeAppKey(app)},
+      );
+      return opened ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> openApp(StoreListingApp app) async {
+    if (app == StoreListingApp.naver) {
+      if (await _openAppViaNative(app)) {
+        return true;
+      }
+    }
+
     if (app == StoreListingApp.daangn) {
       final uris = [Uri.parse('daangn://'), Uri.parse('karrot://')];
       for (final uri in uris) {

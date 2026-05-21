@@ -2,9 +2,59 @@ import 'package:flutter/material.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
+import '../../../services/external_app_launcher.dart';
+import '../../../services/sns_app_link_tracker.dart';
+import '../../widgets/dialogs/app_install_dialog.dart';
 
-class SnsManagementScreen extends StatelessWidget {
+class SnsManagementScreen extends StatefulWidget {
   const SnsManagementScreen({super.key});
+
+  @override
+  State<SnsManagementScreen> createState() => _SnsManagementScreenState();
+}
+
+class _SnsManagementScreenState extends State<SnsManagementScreen> {
+  Map<StoreListingApp, bool> _linked = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLinkedStatus();
+  }
+
+  Future<void> _loadLinkedStatus() async {
+    final status = await SnsAppLinkTracker.linkedStatusForAll();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _linked = status);
+  }
+
+  Future<void> _openApp(StoreListingApp app) async {
+    final installed = await ExternalAppLauncher.canOpenApp(app);
+    if (!mounted) {
+      return;
+    }
+    if (!installed) {
+      await AppInstallDialog.show(context, app: app);
+      return;
+    }
+
+    final opened = await ExternalAppLauncher.openApp(app);
+    if (!mounted) {
+      return;
+    }
+    if (opened) {
+      await SnsAppLinkTracker.markOpened(app);
+      await _loadLinkedStatus();
+      return;
+    }
+    await AppInstallDialog.show(context, app: app);
+  }
+
+  String _accountText(StoreListingApp app) {
+    return _linked[app] == true ? '연동됨' : '연동되지 않음';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,29 +104,29 @@ class SnsManagementScreen extends StatelessWidget {
               SizedBox(height: h(14)),
               _SnsCard(
                 brand: 'Instagram',
-                accountText: '@delicious_cafe',
-                isConnected: true,
+                accountText: _accountText(StoreListingApp.instagram),
                 iconBackground: const Color(0xFFF7E3EB),
                 iconForeground: const Color(0xFFC13584),
                 iconLabel: '▣',
+                onShortcut: () => _openApp(StoreListingApp.instagram),
               ),
               SizedBox(height: h(10)),
               _SnsCard(
-                brand: 'Facebook',
-                accountText: '연동되지 않음',
-                isConnected: false,
-                iconBackground: const Color(0xFFE9EEFF),
-                iconForeground: const Color(0xFF4267B2),
-                iconLabel: 'f',
+                brand: '당근마켓',
+                accountText: _accountText(StoreListingApp.daangn),
+                iconBackground: const Color(0xFFFFF0E5),
+                iconForeground: const Color(0xFFFF8A3D),
+                iconLabel: '🥕',
+                onShortcut: () => _openApp(StoreListingApp.daangn),
               ),
               SizedBox(height: h(10)),
               _SnsCard(
-                brand: '네이버 블로그',
-                accountText: '연동되지 않음',
-                isConnected: false,
+                brand: '네이버 스마트플레이스',
+                accountText: _accountText(StoreListingApp.naver),
                 iconBackground: const Color(0xFFE8F8EC),
-                iconForeground: const Color(0xFF2DB400),
+                iconForeground: const Color(0xFF03C75A),
                 iconLabel: 'N',
+                onShortcut: () => _openApp(StoreListingApp.naver),
               ),
               SizedBox(height: h(14)),
               Container(
@@ -116,18 +166,20 @@ class _SnsCard extends StatelessWidget {
   const _SnsCard({
     required this.brand,
     required this.accountText,
-    required this.isConnected,
     required this.iconBackground,
     required this.iconForeground,
     required this.iconLabel,
+    required this.onShortcut,
   });
 
   final String brand;
   final String accountText;
-  final bool isConnected;
   final Color iconBackground;
   final Color iconForeground;
   final String iconLabel;
+  final VoidCallback onShortcut;
+
+  static const Color _shortcutFill = Color(0xFFA49BEF);
 
   @override
   Widget build(BuildContext context) {
@@ -195,21 +247,13 @@ class _SnsCard extends StatelessWidget {
           SizedBox(
             height: h(42),
             child: OutlinedButton(
-              onPressed: () {},
-              // Connected(연동 해제): text color == border color
-              // Not connected(연동하기): border color == fill color, text color white
+              onPressed: onShortcut,
               style: OutlinedButton.styleFrom(
                 minimumSize: Size(h(98), h(42)),
-                backgroundColor: isConnected
-                    ? AppTheme.surfaceColor
-                    : const Color(0xFFA49BEF),
-                foregroundColor: isConnected
-                    ? const Color(0xFF7B6FE2)
-                    : Colors.white,
-                side: BorderSide(
-                  color: isConnected
-                      ? const Color(0xFF7B6FE2)
-                      : const Color(0xFFA49BEF),
+                backgroundColor: _shortcutFill,
+                foregroundColor: Colors.white,
+                side: const BorderSide(
+                  color: _shortcutFill,
                   width: 1.7,
                 ),
                 padding: EdgeInsets.symmetric(horizontal: h(14), vertical: h(8)),
@@ -218,10 +262,10 @@ class _SnsCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                isConnected ? '연동 해제' : '연동하기',
+                '바로가기',
                 style: textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: isConnected ? const Color(0xFF7B6FE2) : Colors.white,
+                  color: Colors.white,
                 ),
               ),
             ),
