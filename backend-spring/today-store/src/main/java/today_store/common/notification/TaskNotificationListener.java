@@ -2,7 +2,7 @@ package today_store.common.notification;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -22,7 +22,7 @@ public class TaskNotificationListener {
     private final NotificationMapper notificationMapper;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Async
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskCompletedEvent(TaskCompletedEvent event) {
         log.info("Handling TaskCompletedEvent for apiLogId: {}, status: {}", event.getApiLogId(), event.getStatus());
