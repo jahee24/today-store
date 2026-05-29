@@ -73,7 +73,7 @@
         <package android:name="com.instagram.android" />
         <package android:name="com.towneers.www" />
         <package android:name="com.towneers.hello" />
-        <package android:name="com.nhn.android.search" />
+        <package android:name="com.naver.smartplace" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="instagram" />
@@ -88,7 +88,7 @@
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="naversearchapp" />
+            <data android:scheme="smartplace" />
         </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

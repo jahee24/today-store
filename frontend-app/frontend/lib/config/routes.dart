@@ -6,7 +6,6 @@ import 'package:fronted/presentation/screens/processing/image_status_screen.dart
 import 'package:fronted/presentation/screens/processing/processing_loading.dart';
 import 'package:fronted/presentation/screens/result_view/image_result_view.dart';
 import 'package:fronted/presentation/screens/result_view/result_view.dart';
-import 'package:fronted/presentation/screens/share_deeplinks/app_install_prompt_screen.dart';
 import 'package:fronted/presentation/screens/share_deeplinks/share_options_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -120,11 +119,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               : ProcessingMode.text;
           return ProcessingLoadingScreen(mode: mode);
         },
-      ),
-
-      GoRoute(
-        path: '/install-prompt',
-        builder: (context, state) => const AppInstallPromptScreen(),
       ),
 
       GoRoute(

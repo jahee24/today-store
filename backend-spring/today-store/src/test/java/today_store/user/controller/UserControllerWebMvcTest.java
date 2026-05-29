@@ -99,17 +99,24 @@ class UserControllerWebMvcTest {
     @Test
     @DisplayName("내 프로필 수정 성공")
     void shouldUpdateMyProfile() throws Exception {
-        // 인증된 사용자가 이름을 수정하면 수정 응답을 반환해야 한다.
+        // 인증된 사용자가 프로필을 수정하면 변경된 사용자 정보와 토큰 응답 계약을 그대로 반환해야 한다.
 
         // given
         UUID userId = UUID.randomUUID();
         LocalDateTime updatedAt = LocalDateTime.of(2026, 3, 30, 14, 10);
         UpdateUserProfileResponse response = UpdateUserProfileResponse.builder()
                 .id(userId)
+                .email("new@example.com")
+                .name("새 이름")
+                .accessToken("new-access-token")
+                .refreshToken("new-refresh-token")
                 .updatedAt(updatedAt)
                 .build();
         given(userService.updateUserProfile(eq("user@example.com"), any())).willReturn(response);
-        String requestBody = objectMapper.writeValueAsString(java.util.Map.of("name", "새 이름"));
+        String requestBody = objectMapper.writeValueAsString(java.util.Map.of(
+                "name", "새 이름",
+                "email", "new@example.com"
+        ));
 
         // when
         MvcResult result = mockMvc.perform(patch("/api/v1/users/me")
@@ -123,10 +130,15 @@ class UserControllerWebMvcTest {
         // then
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
         assertThat(body.get("id").asText()).isEqualTo(userId.toString());
+        assertThat(body.get("email").asText()).isEqualTo("new@example.com");
+        assertThat(body.get("name").asText()).isEqualTo("새 이름");
+        assertThat(body.get("accessToken").asText()).isEqualTo("new-access-token");
+        assertThat(body.get("refreshToken").asText()).isEqualTo("new-refresh-token");
         assertThat(LocalDateTime.parse(body.get("updatedAt").asText())).isEqualTo(updatedAt);
         then(userService).should().updateUserProfile(
                 eq("user@example.com"),
-                argThat(request -> request.getName().equals("새 이름"))
+                argThat(request -> request.getName().equals("새 이름")
+                        && request.getEmail().equals("new@example.com"))
         );
     }
 
@@ -152,6 +164,34 @@ class UserControllerWebMvcTest {
         assertThat(body.get("code").asText()).isEqualTo("U001");
         assertThat(body.get("message").asText()).isEqualTo("Invalid name format");
         assertThat(body.get("errors").get(0).get("field").asText()).isEqualTo("name");
+    }
+
+    @Test
+    @DisplayName("내 프로필 이메일 검증 오류")
+    void shouldReturnBadRequestWhenEmailIsInvalid() throws Exception {
+        // 이메일 변경 요청의 이메일 형식이 잘못되면 서비스 호출 없이 U001 검증 에러를 반환해야 한다.
+
+        // given
+        String requestBody = objectMapper.writeValueAsString(java.util.Map.of(
+                "name", "새 이름",
+                "email", "invalid-email"
+        ));
+
+        // when
+        MvcResult result = mockMvc.perform(patch("/api/v1/users/me")
+                        .header("X-Forwarded-For", CLIENT_IP)
+                        .principal(authenticationToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andReturn();
+        JsonNode body = readBody(result);
+
+        // then
+        assertThat(result.getResponse().getStatus()).isEqualTo(400);
+        assertThat(body.get("code").asText()).isEqualTo("U001");
+        assertThat(body.get("message").asText()).isEqualTo("Invalid name format");
+        assertThat(body.get("errors").get(0).get("field").asText()).isEqualTo("email");
+        then(userService).shouldHaveNoInteractions();
     }
 
     @Test

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,6 +42,30 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _emailController.text = email;
   }
 
+  String _resolveErrorMessage(Object error) {
+    if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      final data = error.response?.data;
+      final code = data is Map<String, dynamic> ? data['code']?.toString() : null;
+      final message =
+          data is Map<String, dynamic> ? data['message']?.toString().trim() : null;
+
+      if (code == 'U002' || statusCode == 409) {
+        return '이미 사용 중인 이메일이에요. 다른 이메일을 입력해 주세요.';
+      }
+      if (code == 'U001' || statusCode == 400) {
+        return '입력값을 확인해 주세요. (이름 2~100자, 올바른 이메일)';
+      }
+      if (statusCode == 401) {
+        return '인증이 만료되었어요. 다시 로그인해 주세요.';
+      }
+      if (message != null && message.isNotEmpty) {
+        return message;
+      }
+    }
+    return '프로필 저장 중 오류가 발생했어요.';
+  }
+
   Future<void> _handleSave() async {
     if (_isSaving) {
       return;
@@ -52,6 +77,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('이름을 입력해 주세요.')));
+      return;
+    }
+
+    if (trimmedName.length < 2 || trimmedName.length > 100) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이름은 2~100자로 입력해 주세요.')));
       return;
     }
 
@@ -71,7 +103,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     }
 
     final hasNameChanged = trimmedName != _initialName.trim();
-    final hasEmailChanged = trimmedEmail != _initialEmail.trim();
+    final hasEmailChanged =
+        trimmedEmail.toLowerCase() != _initialEmail.trim().toLowerCase();
     if (!hasNameChanged && !hasEmailChanged) {
       ScaffoldMessenger.of(
         context,
@@ -87,7 +120,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       final authRepository = ref.read(authRepositoryProvider);
       final updatedUser = await authRepository.updateMyProfile(
         name: trimmedName,
-        email: trimmedEmail,
+        email: hasEmailChanged ? trimmedEmail : null,
       );
 
       _initialName = updatedUser.name;
@@ -101,17 +134,20 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         return;
       }
 
+      final message = hasEmailChanged
+          ? '이메일이 변경되었어요. 변경된 정보로 다시 로그인되었어요.'
+          : '프로필이 저장되었어요.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('프로필이 저장되었어요.')),
+        SnackBar(content: Text(message)),
       );
       Navigator.of(context).pop();
-    } catch (_) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('프로필 저장 중 오류가 발생했어요.')));
+      ).showSnackBar(SnackBar(content: Text(_resolveErrorMessage(error))));
     } finally {
       if (mounted) {
         setState(() {
@@ -214,6 +250,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       _ProfileTextField(
                         controller: _emailController,
                         hintText: '이메일',
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        textCapitalization: TextCapitalization.none,
                       ),
                       SizedBox(height: h(16)),
                       _FieldLabel('전화번호 (선택)'),
@@ -263,11 +302,15 @@ class _ProfileTextField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     this.keyboardType,
+    this.autocorrect = true,
+    this.textCapitalization = TextCapitalization.sentences,
   });
 
   final TextEditingController controller;
   final String hintText;
   final TextInputType? keyboardType;
+  final bool autocorrect;
+  final TextCapitalization textCapitalization;
 
   @override
   Widget build(BuildContext context) {
@@ -275,6 +318,8 @@ class _ProfileTextField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      autocorrect: autocorrect,
+      textCapitalization: textCapitalization,
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w700,
