@@ -20,6 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.IContext;
 import today_store.authentication.entity.User;
+import today_store.common.gcs.GcsService;
 import today_store.content.content.entity.ApiLog;
 import today_store.content.content.entity.ApiStatus;
 import today_store.content.content.event.TaskCompletedEvent;
@@ -38,11 +39,14 @@ class TaskNotificationListenerTest {
     @Mock
     private NotificationMapper notificationMapper;
 
+    @Mock
+    private GcsService gcsService;
+
     private TaskNotificationListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new TaskNotificationListener(emailService, templateEngine, notificationMapper);
+        listener = new TaskNotificationListener(emailService, templateEngine, notificationMapper,gcsService);
     }
 
     @Test
