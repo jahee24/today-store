@@ -62,6 +62,10 @@ public class GcsService {
     }
 
     public String generateSignedUrl(String objectName) {
+        return generateSignedUrl(objectName, 15, TimeUnit.MINUTES);
+    }
+
+    public String generateSignedUrl(String objectName, long duration, TimeUnit unit) {
         if (objectName == null || objectName.isEmpty()) {
             return null;
         }
@@ -69,7 +73,7 @@ public class GcsService {
         BlobId blobId = BlobId.of(bucketName, objectName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
 
-        URL signedUrl = storage.signUrl(blobInfo, 15, TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature());
+        URL signedUrl = storage.signUrl(blobInfo, duration, unit, Storage.SignUrlOption.withV4Signature());
         return signedUrl.toString();
     }
 

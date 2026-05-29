@@ -184,7 +184,10 @@ public class ComfyWebhookService {
         apiLog.completeSuccess(null, 0, 0, BigDecimal.ZERO, 0);
         apiLogRepository.save(apiLog);
 
-        eventPublisher.publishEvent(new TaskCompletedEvent(this, apiLog));
+        List<String> imageUrls = variations.stream()
+                .map(InputImageVariation::getUrl)
+                .collect(Collectors.toList());
+        eventPublisher.publishEvent(new TaskCompletedEvent(this, apiLog, imageUrls));
     }
 
     @Transactional

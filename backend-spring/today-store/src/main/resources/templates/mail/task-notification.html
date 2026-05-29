@@ -34,6 +34,22 @@
         지금 바로 결과를 확인해 보세요!
     </p>
 
+    <div th:if="${status == 'SUCCESS' and resultImageUrls != null and !resultImageUrls.isEmpty()}" style="margin-top: 20px;">
+        <p><strong>생성된 결과 이미지:</strong></p>
+        <table style="width: 100%; border-collapse: separate; border-spacing: 5px;">
+            <tr th:each="rowIdx : ${#numbers.sequence(0, 1)}">
+                <td th:each="colIdx : ${#numbers.sequence(0, 3)}"
+                    th:with="index=${rowIdx * 4 + colIdx}"
+                    style="width: 25%; text-align: center; vertical-align: top;">
+                    <img th:if="${index < resultImageUrls.size()}"
+                         th:src="${resultImageUrls[index]}"
+                         alt="Result Image"
+                         style="width: 100%; max-width: 130px; height: auto; border-radius: 8px; border: 1px solid #eee; display: block; margin: 0 auto;"/>
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <div class="footer">
         본 메일은 시스템에 의해 자동 발송되었습니다.
     </div>
