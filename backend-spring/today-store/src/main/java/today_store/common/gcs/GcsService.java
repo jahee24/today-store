@@ -77,6 +77,24 @@ public class GcsService {
         return signedUrl.toString();
     }
 
+    public String generateDownloadSignedUrl(String objectName, long duration, TimeUnit unit) {
+        if (objectName == null || objectName.isEmpty()) {
+            return null;
+        }
+
+        String fileName = objectName.substring(objectName.lastIndexOf("/") + 1);
+        BlobId blobId = BlobId.of(bucketName, objectName);
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
+
+        URL signedUrl = storage.signUrl(blobInfo, duration, unit,
+                Storage.SignUrlOption.withV4Signature(),
+                Storage.SignUrlOption.withQueryParams(java.util.Map.of(
+                        "response-content-disposition", "attachment; filename=\"" + fileName + "\""
+                ))
+        );
+        return signedUrl.toString();
+    }
+
     public void deleteFile(String objectName) {
         if (objectName == null || objectName.isEmpty()) {
             return;

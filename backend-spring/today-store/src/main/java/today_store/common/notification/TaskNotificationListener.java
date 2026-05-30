@@ -47,6 +47,12 @@ public class TaskNotificationListener {
                     .toList();
             context.setVariable("resultImageUrls", signedUrls);
 
+            // Generate download URLs with content-disposition header
+            List<String> downloadUrls = event.getImageUrls().stream()
+                    .map(url -> gcsService.generateDownloadSignedUrl(url, 7, TimeUnit.DAYS))
+                    .toList();
+            context.setVariable("downloadImageUrls", downloadUrls);
+
             String content = templateEngine.process("mail/task-notification", context);
             String subject = "[알림] " + translatedTaskType + " 작업이 완료되었습니다 (" + event.getStatus().name() + ")";
 

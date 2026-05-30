@@ -41,10 +41,15 @@
                 <td th:each="colIdx : ${#numbers.sequence(0, 3)}"
                     th:with="index=${rowIdx * 4 + colIdx}"
                     style="width: 25%; text-align: center; vertical-align: top;">
-                    <img th:if="${index < resultImageUrls.size()}"
-                         th:src="${resultImageUrls[index]}"
-                         alt="Result Image"
-                         style="width: 100%; max-width: 130px; height: auto; border-radius: 8px; border: 1px solid #eee; display: block; margin: 0 auto;"/>
+                    <div th:if="${index < resultImageUrls.size()}">
+                        <img th:src="${resultImageUrls[index]}"
+                             alt="Result Image"
+                             style="width: 100%; max-width: 130px; height: auto; border-radius: 8px; border: 1px solid #eee; display: block; margin: 0 auto;"/>
+                        <a th:href="${downloadImageUrls[index]}"
+                           style="display: inline-block; margin-top: 8px; font-size: 12px; color: #007bff; text-decoration: none; font-weight: bold;">
+                            [저장하기]
+                        </a>
+                    </div>
                 </td>
             </tr>
         </table>
