@@ -48,6 +48,11 @@ class AuthApi {
     );
   }
 
+  /// DELETE /api/v1/auth/me — 계정 탈퇴 (204 No Content)
+  Future<void> deleteAccount() async {
+    await dio.delete('/api/v1/auth/me');
+  }
+
   Future<UserModel> getMyProfile() async {
     try {
       final response = await dio.get('/api/v1/users/me');

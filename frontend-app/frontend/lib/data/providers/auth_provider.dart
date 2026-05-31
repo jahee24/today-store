@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide AuthApi;
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../datasources/remote/api_client.dart';
+import '../../config/google_auth_config.dart';
 import '../datasources/remote/auth_api.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
@@ -122,11 +122,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> loginWithGoogle() async {
-    // iOS는 GoogleService-Info.plist 설정 전까지 네이티브 크래시 방지
-    if (Platform.isIOS) {
+    if (Platform.isIOS && !GoogleAuthConfig.isIosConfigured) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        errorMessage: 'iOS Google 로그인은 준비 중이에요.\n카카오 로그인을 이용해주세요.',
+        errorMessage:
+            'iOS Google 로그인 설정이 필요해요.\n'
+            'google_auth_config.dart의 iosClientId와\n'
+            'ios/Runner/Info.plist URL Scheme을 설정해 주세요.',
       );
       return;
     }
@@ -139,7 +141,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final googleSignIn = GoogleSignIn(
         scopes: <String>['email', 'profile'],
-        serverClientId: '549695709482-asrt15cmpvk0g3e97m2jlfkcagvg5ncl.apps.googleusercontent.com',
+        clientId: Platform.isIOS ? GoogleAuthConfig.iosClientId : null,
+        serverClientId: GoogleAuthConfig.webClientId,
       );
 
       final GoogleSignInAccount? account = await googleSignIn.signIn();
@@ -213,6 +216,43 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await authRepository.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  /// 계정 탈퇴. 성공 시 `null`, 실패 시 사용자에게 보여줄 메시지.
+  Future<String?> withdraw() async {
+    try {
+      await authRepository.withdraw();
+      state = const AuthState(status: AuthStatus.unauthenticated);
+      return null;
+    } catch (e) {
+      return _buildWithdrawErrorMessage(e);
+    }
+  }
+
+  String _buildWithdrawErrorMessage(Object error) {
+    if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final message = data['message']?.toString().trim();
+        if (message != null && message.isNotEmpty) {
+          return statusCode != null ? '[$statusCode] $message' : message;
+        }
+      }
+      if (statusCode == 401) {
+        return '로그인이 만료되었어요. 다시 로그인한 뒤 탈퇴를 시도해 주세요.';
+      }
+      if (statusCode == 403) {
+        return '탈퇴할 수 없는 계정이에요. 고객센터에 문의해 주세요.';
+      }
+      if (statusCode == 404) {
+        return '계정 정보를 찾을 수 없어요. 다시 로그인해 주세요.';
+      }
+      return statusCode != null
+          ? '탈퇴 요청이 실패했어요. (HTTP $statusCode)'
+          : '탈퇴 요청 중 네트워크 오류가 발생했어요.';
+    }
+    return '탈퇴 처리 중 오류가 발생했어요.';
   }
 
   void forceLogout(String message) {

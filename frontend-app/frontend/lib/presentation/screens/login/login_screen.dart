@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../widgets/legal_agreement_footer.dart';
 import 'login_loading.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -45,40 +46,16 @@ class LoginScreen extends ConsumerWidget {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Column(
                 children: [
-                  const Spacer(flex: 3),
-
-                  SizedBox(
-                    width: AppLayout.h(context, 90),
-                    height: AppLayout.h(context, 90),
-                    child: Center(
-                      child: Text('🏪', style: TextStyle(fontSize: AppLayout.f(context, 58))),
-                    ),
-                  ),
-                  SizedBox(height: AppLayout.h(context, 20)),
-
-                  Text(
-                    '오늘의 가게',
-                    style: textTheme.headlineLarge?.copyWith(
-                      fontSize: AppLayout.f(context, 33),
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                      height: 1.1,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  SizedBox(height: AppLayout.h(context, 17)),
-
-                  Text(
-                    'AI가 만들어주는\n우리 가게 홍보 콘텐츠',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyLarge?.copyWith(
-                      fontSize: AppLayout.f(context, 18),
-                      height: 1.5,
-                      color: AppTheme.textTertiary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
                   const Spacer(flex: 4),
+
+                  Image.asset(
+                    'assets/images/app_logo_login.png',
+                    width: AppLayout.h(context, 220),
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    isAntiAlias: true,
+                  ),
+                  const Spacer(flex: 2),
 
                   SizedBox(
                     width: double.infinity,
@@ -167,15 +144,7 @@ class LoginScreen extends ConsumerWidget {
                   ),
                   SizedBox(height: AppLayout.h(context, 28)),
 
-                  Text(
-                    '로그인 시 이용약관 및 개인정보처리방침에 동의합니다',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontSize: AppLayout.f(context, 14),
-                      color: AppTheme.textHint,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
+                  const LegalAgreementFooter(),
 
                   const Spacer(flex: 3),
                 ],

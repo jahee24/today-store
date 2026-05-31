@@ -53,10 +53,17 @@ dev_dependencies:
   json_serializable:
   hive_generator:
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.6
+  image: ^4.5.4
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/images/app_logo.png
+    - assets/images/app_logo_large.png
+    - assets/images/app_logo_login.png
 
   fonts:
     - family: NotoSansKR
@@ -72,12 +79,24 @@ flutter:
         - asset: assets/fonts/NotoSansKR-Bold.ttf
           weight: 700
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/app_logo.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/images/app_logo.png
+
 flutter_native_splash:
-  color: "#4F46E5"
-
-  android_12:
-    color: "#4F46E5"
-
+  color: "#FFFFFF"
+  # Android 11 이하 / iOS: 전체 로고 (원형 아님)
+  image: assets/images/app_logo_splash.png
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
   android: true
   ios: true
   web: false
+  # Android 12+: 중앙만 원형(일러스트), 하단 branding 없음
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/app_logo_splash.png
+    icon_background_color: "#FFFFFF"
