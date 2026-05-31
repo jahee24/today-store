@@ -66,6 +66,11 @@ class AuthRepository {
     }
   }
 
+  Future<void> withdraw() async {
+    await authApi.deleteAccount();
+    await tokenService.clearTokens();
+  }
+
   Future<UserModel> getMyProfile() {
     return authApi.getMyProfile();
   }

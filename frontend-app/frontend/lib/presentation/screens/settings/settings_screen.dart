@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../widgets/dialogs/app_confirm_dialog.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -141,6 +142,18 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => _showWithdrawDialog(context, ref),
+                      child: Text(
+                        '탈퇴하기',
+                        style: textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFFE25555),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -148,6 +161,33 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _showWithdrawDialog(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AppConfirmDialog(
+        title: '탈퇴하시겠습니까?',
+        content:
+            '계정을 삭제하면 생성 목록, 이미지, 계정 정보 등 모든 이용기록을 다시 복구할 수 없어요.',
+        confirmText: '탈퇴',
+        onConfirm: () => _withdrawAccount(context, ref),
+      ),
+    );
+  }
+
+  Future<void> _withdrawAccount(BuildContext context, WidgetRef ref) async {
+    final error = await ref.read(authProvider.notifier).withdraw();
+    if (!context.mounted) return;
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
+
+    context.go('/login');
   }
 }
 

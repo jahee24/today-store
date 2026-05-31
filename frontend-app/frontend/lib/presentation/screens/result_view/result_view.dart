@@ -14,7 +14,6 @@ import '../../../data/models/content_model.dart';
 import '../../../data/providers/content_creation_provider.dart';
 import '../../../data/providers/dashboard_provider.dart';
 import '../../widgets/buttons/back_arrow_button.dart';
-import '../../widgets/buttons/primary_button.dart';
 
 class ResultViewScreen extends ConsumerWidget {
   const ResultViewScreen({super.key});
