@@ -8,9 +8,12 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import today_store.common.gcs.GcsService;
 import today_store.content.content.event.TaskCompletedEvent;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -20,6 +23,7 @@ public class TaskNotificationListener {
     private final EmailService emailService;
     private final TemplateEngine templateEngine;
     private final NotificationMapper notificationMapper;
+    private final GcsService gcsService;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 
@@ -36,6 +40,18 @@ public class TaskNotificationListener {
             context.setVariable("status", event.getStatus().name());
             context.setVariable("errorMessage", translatedErrorMessage);
             context.setVariable("submittedAt", event.getSubmittedAt().format(FORMATTER));
+
+            // Convert GCS object keys to 7‑day signed URLs for email rendering
+            List<String> signedUrls = event.getImageUrls().stream()
+                    .map(url -> gcsService.generateSignedUrl(url, 7, TimeUnit.DAYS))
+                    .toList();
+            context.setVariable("resultImageUrls", signedUrls);
+
+            // Generate download URLs with content-disposition header
+            List<String> downloadUrls = event.getImageUrls().stream()
+                    .map(url -> gcsService.generateDownloadSignedUrl(url, 7, TimeUnit.DAYS))
+                    .toList();
+            context.setVariable("downloadImageUrls", downloadUrls);
 
             String content = templateEngine.process("mail/task-notification", context);
             String subject = "[알림] " + translatedTaskType + " 작업이 완료되었습니다 (" + event.getStatus().name() + ")";
